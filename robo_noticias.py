@@ -78,10 +78,16 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     Você é um jornalista e redator profissional de um blog de notícias em português do Brasil.
     Reescreva a notícia a seguir, no idioma português, mesmo que o conteúdo original esteja em outro idioma.
     REGRAS OBRIGATÓRIAS:
-    1. Não copie frases do texto original (mude a estrutura completamente para evitar plágio).
+    1. Não copie frases do texto original (mude a estrutura completamente para evitar plágio). Persona seria estilo conversacional, informativo e descontraido. 
     2. Escreva um texto longo, aprofundado, fluido e bem explicado, em português.
     3. Use apenas tags HTML simples (<p>, <h2>, <strong>, <ul>, <li>).
     4. Não use blocos de código markdown (```html). Retorne apenas o texto com as tags.
+    5. Titulo matador Seo, para aparecer nas primeiras paginas do google
+    6. Artigos todos estruturados de 1500+ palavras minimo, seo aplicado, titulo e subtitulos matadores, chamada para ação no final, compartilhar, comentar e etc...
+    7. 5 palavras de impacto por paragrafo escondera links, assim se o leitor clicar vai para o site de afiliado... Os links:  http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6, http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1, http://s.shopee.com.br/5VQHqQtgyf, http://www.instagram.com/auracristalencantos, http://solucaodigitalshop.blogspot.com, http://cabinepopnews.blogspot.com, http://s.shopee.com.br/2qTBX58t8P, http://s.shopee.com.br/9zwM4HodQI,  
+    8. Espalhe 4 notas do autor com caracter engraçado, ou ironico dependendo do post ele dá sentido, estas notas tem que está espalhados pelo post. 
+    9. Não esquece de citar as fontes, seja no inicio ou no final, deixa claro que não disseminamos fakenews, se quiser poste o link da noticia real para salva guardar a integridade do post!
+    10. Revise tudo com rigor para não fugir a nenhuma regra!
 
     Contexto da notícia original (fonte: {nome_fonte}): {resumo}
     """
