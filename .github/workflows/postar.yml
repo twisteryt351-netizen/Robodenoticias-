@@ -1,0 +1,38 @@
+name: Robo de Noticias Automatico
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'   # roda a cada 2 horas, todos os dias, sozinho
+  workflow_dispatch:         # permite clicar em "Run workflow" pra testar na hora
+
+jobs:
+  postar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar bibliotecas
+        run: pip install feedparser google-generativeai google-api-python-client google-auth-oauthlib google-auth
+
+      - name: Rodar o robô
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOGGER_ID: ${{ secrets.BLOGGER_ID }}
+          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+        run: python robo_noticias.py
+
+      - name: Salvar histórico de notícias já postadas
+        run: |
+          git config user.name "Robo de Noticias"
+          git config user.email "robo@exemplo.com"
+          git add historico_postados.txt || true
+          git commit -m "Atualiza historico" || true
+          git push || true
