@@ -342,7 +342,7 @@ html_final = f"""{img1_html}
     <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
         📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
     </p>"""
-    return novo_titulo, html_final
+        return novo_titulo, html_final
 
 
 def obter_credenciais():
