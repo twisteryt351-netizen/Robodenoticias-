@@ -8,14 +8,14 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 
 # --- CONFIGURAÇÕES (variáveis de ambiente) ---
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 BLOGGER_ID = os.environ.get("BLOGGER_ID")
 CLIENT_ID = os.environ.get("BLOGGER_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("BLOGGER_CLIENT_SECRET")
 REFRESH_TOKEN = os.environ.get("BLOGGER_REFRESH_TOKEN")
 
 for nome, valor in [
-    ("GEMINI_API_KEY", GEMINI_API_KEY),
+    ("GROQ_API_KEY", GROQ_API_KEY),
     ("BLOGGER_ID", BLOGGER_ID),
     ("BLOGGER_CLIENT_ID", CLIENT_ID),
     ("BLOGGER_CLIENT_SECRET", CLIENT_SECRET),
@@ -24,8 +24,16 @@ for nome, valor in [
     if not valor:
         raise ValueError(f"Faltou configurar a variável/segredo: {nome}")
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
+import os
+from groq import Groq
+
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+response = client.chat.completions.create(
+    messages=[{"role": "user", "content": seu_prompt}],
+    model="llama-3.1-8b-instant",
+)
+texto_gerado = response.choices[0].message.content
 
 # --- FONTES RSS (corrigidas) ---
 FONTES = {
