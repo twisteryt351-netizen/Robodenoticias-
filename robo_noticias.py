@@ -333,15 +333,18 @@ caixa_publicidade = (
         '</div>'
     )
       
-html_final = f"""{img1_html}
-    {conteudo_reescrito}
+img1_html = img1_html if 'img1_html' in globals() else ""
+conteudo_reescrito = conteudo_reescrito if 'conteudo_reescrito' in globals() else ""
 
-    {caixa_cta}
-    {caixa_publicidade}
-    <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
-    <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
-        📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
-    </p>"""
+html_final = f"""{img1_html}
+{conteudo_reescrito}
+
+{caixa_cta}
+{caixa_publicidade}
+<hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
+<p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
+    📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
+</p>"""
 
 def obter_credenciais():
     return Credentials(
