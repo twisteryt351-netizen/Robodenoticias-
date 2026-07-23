@@ -234,15 +234,18 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     imagens = buscar_imagens_openverse(palavra_chave, quantidade=2)
     img_principal, img_secundaria = imagens[0], imagens[1]
 
+    # Título novo
     prompt_titulo = (
         f"Crie um título inédito, sem aspas, chamativo e em português do Brasil para esta notícia: '{titulo}'. "
         f"Responda APENAS com o título em texto puro, sem tags HTML."
     )
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
 
+    # Gera as duas imagens HTML
     img1_html = gerar_tabela_imagem_blogger(img_principal, novo_titulo, novo_titulo)
     img2_html = gerar_tabela_imagem_blogger(img_secundaria, novo_titulo, "Entenda os detalhes")
 
+    # Decide se o assunto é leve ou sério
     assunto_leve = eh_assunto_leve(titulo, resumo)
 
     if assunto_leve:
@@ -256,7 +259,9 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
             "5. Este é um assunto sério. NÃO inclua nenhuma piada, brincadeira ou comentário "
             "descontraído. Mantenha um tom respeitoso, factual e sóbrio do início ao fim."
         )
-prompt_texto = f"""\
+
+    # MONTA O PROMPT COMPLETO (com a correção de chave única)
+    prompt_texto = f"""\
 Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
 Com diálogo conversacional, descontraído e divertido!
 Escreva um artigo COMPLETO e APROFUNDADO e fluido no idioma português brasileiro, com base nas informações reais abaixo.
@@ -270,8 +275,8 @@ REGRAS DE FORMATO (HTML PURO):
 2. Envolva todos os parágrafos em tags <p>.
 3. Crie NO MÍNIMO 4 subtítulos usando a tag <h2>, cada um abrindo uma nova frente de
    análise (contexto, detalhes técnicos, reações, repercussão, o que vem a seguir, etc).
-4. Logo após o primeiro <h2>, insira exatamente este trecho: {{img2_html}}
-   {{instrucao_humor}}
+4. Logo após o primeiro <h2>, insira exatamente este trecho: {img2_html}
+   {instrucao_humor}
 5. Este é um assunto que será abordado com um tom leve, bem-humorado e
    descontraído, exatamente como uma conversa de bar entre amigos. Use
    analogias criativas, gírias brasileiras quando couber, e um toque de
@@ -302,28 +307,28 @@ REGRAS DE FORMATO (HTML PURO):
     FRASES REPETIDAS. Artigo completo, muito bem escrito e agradável! Cuidado com repetições
     e looping de texto e contexto; se for preciso, busque mais de uma fonte para preencher o post.
 
-Notícia original capturada (fonte: {{nome_fonte}}):
-  - Título: {{título}}
-  - Resumo: {{resumo}}
+Notícia original capturada (fonte: {nome_fonte}):
+  - Título: {titulo}
+  - Resumo: {resumo}
+"""
 
+    # Gera o conteúdo reescrito
     conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.6)
 
-    caixa_cta = """
-caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
+    # Caixas de compartilhamento e publicidade
+    caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
 <p style="font-size: 17px; font-weight: bold; color: #333; margin: 0 0 10px 0;">Gostou desta matéria?</p>
-        <p style="font-size: 14px; color: #555; margin: 0 0 15px 0;">Deixe seu comentário abaixo e compartilhe com quem também acompanha esse assunto!</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-            <a href="#" onclick="window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(document.title + ' - ' + window.location.href), '_blank'); return false;" style="background-color: #25d366; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">🟢 WhatsApp</a>
-            <a href="#" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href), '_blank'); return false;" style="background-color: #1877f2; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">🔵 Facebook</a>
-            <a href="#" onclick="window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(window.location.href), '_blank'); return false;" style="background-color: #000; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">⚫ X</a>
-        </div>
-    </div>
-    """
+<p style="font-size: 14px; color: #555; margin: 0 0 15px 0;">Deixe seu comentário abaixo e compartilhe com quem também acompanha esse assunto!</p>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+    <a href="#" onclick="window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(document.title + ' - ' + window.location.href), '_blank'); return false;" style="background-color: #25d366; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">🟢 WhatsApp</a>
+    <a href="#" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href), '_blank'); return false;" style="background-color: #1877f2; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">🔵 Facebook</a>
+    <a href="#" onclick="window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(window.location.href), '_blank'); return false;" style="background-color: #000; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">⚫ X</a>
+</div>
+</div>
+"""
 
-    # Caixa de publicidade primeira, no meio do post, claramente identificada como anúncio.
-    # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
-caixa_publicidade = (
-    '<div style="background-color: #ffeef4; border-radius: 16px; border: 2px solid rgb(255, 0, 127); '
+    caixa_publicidade = (
+        '<div style="background-color: #ffeef4; border-radius: 16px; border: 2px solid rgb(255, 0, 127); '
         'box-shadow: rgba(255, 0, 127, 0.15) 0px 4px 20px; color: #2d3748; font-family: sans-serif; '
         'margin: 40px 0px; padding: 25px;">'
         '<p style="color: #ff007f; font-size: 20px; font-weight: bold; margin-top: 0px; text-align: center;">'
@@ -332,14 +337,9 @@ caixa_publicidade = (
         'economizar de verdade nas suas compras online diariamente?</p>'
         '</div>'
     )
-      
-img1_html = img1_html if 'img1_html' in globals() else ""
-conteudo_reescrito = conteudo_reescrito if 'conteudo_reescrito' in globals() else ""
 
-link_fonte = link_fonte if 'link_fonte' in globals() else "#"
-nome_fonte = nome_fonte if 'nome_fonte' in globals() else "Fonte Original"
-
-html_final = f"""{img1_html}
+    # Monta o HTML final
+    html_final = f"""{img1_html}
 {conteudo_reescrito}
 
 {caixa_cta}
@@ -348,7 +348,8 @@ html_final = f"""{img1_html}
 <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
     📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
 </p>"""
-return novo_titulo, html_final
+
+    return novo_titulo, html_final
 def obter_credenciais():
     return Credentials(
         token=None,
