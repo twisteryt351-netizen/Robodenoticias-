@@ -234,7 +234,7 @@ import random
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     palavra_chave = extrair_palavra_chave(titulo)
-    imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)  # AGORA BUSCA 3 IMAGENS
+    imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)  # 3 IMAGENS
     img_principal, img_secundaria, img_terciaria = imagens[0], imagens[1], imagens[2]
 
     # Título novo
@@ -330,7 +330,6 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
         Responda APENAS com o texto em HTML puro, usando <p>.
         """
         extra = pedir_ia_groq(prompt_extra, temperatura=0.7)
-        # Insere antes do último parágrafo
         partes = conteudo_reescrito.rsplit('</p>', 1)
         if len(partes) == 2:
             conteudo_reescrito = partes[0] + extra + '</p>' + partes[1]
@@ -373,10 +372,9 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     conteudo_reescrito = remover_repetidos(conteudo_reescrito)
 
     # ================================================================
-    # PASSO 3: GARANTIR QUE EXISTAM SUBTÍTULOS (<h2>)
+    # PASSO 3: GARANTIR SUBTÍTULOS (<h2>)
     # ================================================================
     if '<h2>' not in conteudo_reescrito:
-        # Se não tiver nenhum h2, insere um título genérico no início
         conteudo_reescrito = '<h2>Contexto da Notícia</h2>\n' + conteudo_reescrito
 
     # ================================================================
@@ -389,12 +387,10 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
             "<blockquote>Enquanto isso, a gente aqui acompanhando os desdobramentos. Bora ver no que vai dar!</blockquote>"
         ]
         nota = random.choice(notas)
-        # Insere após o primeiro </h2> encontrado
         if '</h2>' in conteudo_reescrito:
             partes = conteudo_reescrito.split('</h2>', 1)
             conteudo_reescrito = partes[0] + '</h2>\n' + nota + '\n' + partes[1]
         else:
-            # Se não tiver h2 (fallback), insere no início do primeiro parágrafo
             partes = conteudo_reescrito.split('<p>', 1)
             if len(partes) == 2:
                 conteudo_reescrito = partes[0] + '<p>' + nota + '\n' + partes[1]
@@ -404,22 +400,17 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     # ================================================================
     # PASSO 5: INSERIR A IMAGEM TERCIÁRIA NO MEIO DO TEXTO
     # ================================================================
-    # Insere a img3 após o segundo <h2> ou no meio do texto
     if '<h2>' in conteudo_reescrito:
-        # Procura o segundo h2
         partes = conteudo_reescrito.split('<h2>', 2)
         if len(partes) >= 3:
-            # Insere após o segundo h2
             conteudo_reescrito = partes[0] + '<h2>' + partes[1] + '</h2>\n' + img3_html + '\n' + '<h2>' + partes[2]
         else:
-            # Se não tiver segundo h2, insere após o primeiro
             partes = conteudo_reescrito.split('</h2>', 1)
             if len(partes) == 2:
                 conteudo_reescrito = partes[0] + '</h2>\n' + img3_html + '\n' + partes[1]
             else:
                 conteudo_reescrito = img3_html + '\n' + conteudo_reescrito
     else:
-        # Se não tiver h2 nenhum, insere no início
         conteudo_reescrito = img3_html + '\n' + conteudo_reescrito
 
     # ================================================================
@@ -473,7 +464,7 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     conteudo_reescrito = re.sub(r'</h2>\s*</p>', '</h2>', conteudo_reescrito)
 
     # ================================================================
-    # MONTAGEM FINAL
+    # MONTAGEM FINAL (SEM CAIXA DE PUBLICIDADE)
     # ================================================================
     caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
 <p style="font-size: 17px; font-weight: bold; color: #333; margin: 0 0 10px 0;">Gostou desta matéria?</p>
@@ -485,13 +476,13 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
 </div>
 </div>
 """
+
     html_final = f"""{meta_tags}
 
 {img1_html}
 {conteudo_reescrito}
 
 {caixa_cta}
-{caixa_publicidade}
 <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
 <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
     📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
