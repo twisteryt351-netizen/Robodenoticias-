@@ -25,21 +25,7 @@ for nome, valor in [
         raise ValueError(f"Faltou configurar a variável/segredo: {nome}")
 
 genai.configure(api_key=GEMINI_API_KEY)
-# Tenta os modelos em ordem até achar o disponível no seu plano de API
-modelos_para_testar = [
-    'gemini-flash',              # Alias oficial da Google que aponta pro modelo ativo
-    'gemini-1.5-flash',
-    'gemini-2.0-flash',
-    'gemini-2.5-flash'
-]
-
-model = None
-for nome_modelo in modelos_para_testar:
-    try:
-        model = genai.GenerativeModel(nome_modelo)
-        break
-    except Exception:
-        continue
+model = genai.GenerativeModel('gemini-pro')
 
 # --- FONTES RSS (corrigidas) ---
 FONTES = {
