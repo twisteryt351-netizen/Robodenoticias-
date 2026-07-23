@@ -1,6 +1,5 @@
 import os
 import random
-import time
 import feedparser
 from groq import Groq
 from googleapiclient.discovery import build
@@ -26,81 +25,54 @@ for nome, valor in [
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# --- FONTES RSS MESCLADAS ---
+# --- SEU LINK DE AFILIADO (opcional) ---
+# Coloque aqui SEU link de afiliado real e legítimo (ex: Shopee, Amazon Associates, etc).
+# Ele vai aparecer em UMA ÚNICA caixa no final do post, claramente identificada como
+# "Publicidade" — isso é o que te protege de banimento por link stuffing/cloaking.
+LINK_AFILIADO = os.environ.get("LINK_AFILIADO", "")  # deixe vazio se não tiver ainda
+
+# --- FONTES RSS ---
 FONTES = {
     # Portais de Notícias Gerais
     "G1": "https://g1.globo.com/rss/g1/",
     "G1 Tecnologia": "https://g1.globo.com/rss/g1/tecnologia/",
     "UOL Notícias": "https://rss.uol.com.br/feed/noticias.xml",
-    "Terra Notícias": "https://terra.com.br/rss/noticias/",
     "R7 Notícias": "https://noticias.r7.com/feed/",
-    "Band Notícias": "https://band.com.br/rss/noticias/",
-    "Record Notícias": "https://noticias.r7.com/record/feed/",
-    "SBT News": "https://sbtnews.sbt.com.br/feed/",
-    "Jovem Pan Notícias": "https://jovempan.com.br/feed/",
     "BBC Brasil": "https://www.bbc.com/portuguese/index.xml",
 
     # Jornais e Revistas
     "Folha de S.Paulo": "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml",
     "O Estado de S.Paulo (Estadão)": "https://www.estadao.com.br/rss/",
-    "O Globo": "https://oglobo.globo.com/rss/",
-    "Extra": "https://extra.globo.com/rss/",
-    "Zero Hora": "https://zerohora.clicrbs.com.br/rss/",
-    "Correio Braziliense": "https://www.correiobraziliense.com.br/rss/",
-    "Gazeta do Povo": "https://www.gazetadopovo.com.br/feed/",
     "Veja": "https://veja.abril.com.br/feed/",
-    "Época": "https://epoca.globo.com/rss/",
-    "IstoÉ": "https://istoe.com.br/feed/",
 
-    # Esportes (Expandido)
+    # Esportes
     "Globo Esporte": "https://ge.globo.com/rss/",
     "UOL Esporte": "https://rss.uol.com.br/feed/esporte.xml",
     "ESPN Brasil": "https://www.espn.com.br/rss/",
     "Lance!": "https://www.lance.com.br/rss/",
-    "Gazeta Esportiva": "https://www.gazetadopovo.com.br/feed/",
-    "Trivela": "https://trivela.com.br/feed/",
-    "OneFootball (BR)": "https://onefootball.com/feed/br/",
-    "TNT Sports BR": "https://tntsports.com.br/feed/",
-    "F1 Mania (Automobilismo)": "https://www.f1mania.net/feed/",
-    "MMA Fighting / Combate": "https://www.mmafighting.com/rss/index.xml",
-    "Superesportes": "https://www.mg.superesportes.com.br/rss/",
-    "MKTEsportivo": "https://mktesportivo.com/feed/",
+
+    # Luta Livre / WWE
+    "WWE Oficial (Notícias)": "https://www.wwe.com/feeds/rss/news",
+    "Wrestling Fight Club": "https://wrestlingfightclub.com.br/feed/",
+    "Universo Wrestling": "https://universowrestling.com.br/feed/",
 
     # Entretenimento, Cultura Pop e Geek
     "Omelete": "https://www.omelete.com.br/sitemap-news.xml",
     "Jovem Nerd": "https://jovemnerd.com.br/feed-completo",
-    "Critical Hits": "https://criticalhits.com.br/feed/",
-    "Legião dos Heróis": "https://legiaodosherois.com.br/feed/",
-    "IGN Brasil": "https://br.ign.com/feed/",
     "TecMundo": "https://tecmundo.com.br/feed/",
     "Canaltech": "https://canaltech.com.br/feed/",
-    "AdoroCinema": "https://www.adorocinema.com.br/rss/",
-    "Combo Infinito": "https://comboinfinito.com.br/feed/",
-    "The Enemy": "https://theenemy.com.br/feed/",
-    "Garotas Geeks": "https://garotasgeeks.com/feed/",
-
-    # Fofocas e Celebridades
-    "Quem Acontece": "https://quem.globo.com/rss/",
-    "Contigo!": "https://contigo.com.br/feed/",
-    "Caras": "https://caras.com.br/feed/",
-    "OFuxico": "https://ofuxico.com.br/feed/",
-    "Purepeople BR": "https://www.purepeople.com.br/rss.xml",
 
     # Internacional
     "BBC News (Mundo)": "http://feeds.bbci.co.uk/news/world/rss.xml",
     "CNN Internacional": "http://rss.cnn.com/rss/edition.rss",
     "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
-    "El País Brasil": "https://elpais.com/arc/outboundfeeds/rss/tags_slug/brasil-a/?outputType=xml",
-    "France 24 Português": "https://www.france24.com/pt/rss",
 
     # Clima
     "Climatempo": "https://www.climatempo.com.br/rss/",
-    "Metsul Meteorologia": "https://metsul.com/feed/",
-    "INMET Notícias": "https://portal.inmet.gov.br/noticias/rss",
-    "Tempo.com Meteored": "https://www.tempo.com/rss/",
 }
 
 ARQUIVO_HISTORICO = "historico_postados.txt"
+
 
 def ja_foi_postada(link):
     if not os.path.exists(ARQUIVO_HISTORICO):
@@ -108,9 +80,11 @@ def ja_foi_postada(link):
     with open(ARQUIVO_HISTORICO, "r", encoding="utf-8") as f:
         return link in f.read()
 
+
 def marcar_como_postada(link):
     with open(ARQUIVO_HISTORICO, "a", encoding="utf-8") as f:
         f.write(link + "\n")
+
 
 def pegar_noticia_multiplas_fontes():
     fontes_lista = list(FONTES.items())
@@ -142,20 +116,42 @@ def pegar_noticia_multiplas_fontes():
 
     return None, None, None, None
 
-def pedir_ia_groq(prompt):
+
+def pedir_ia_groq(prompt, temperatura=0.7):
     response = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
         model="llama-3.1-8b-instant",
-        temperature=0.7,
+        temperature=temperatura,
     )
     return response.choices[0].message.content.strip()
 
+
 def gerar_tabela_imagem_blogger(url_img, alt_title, legenda):
-    """Gera a estrutura HTML de imagem padrão do Blogger com Tabela Centralizada"""
-    return f'''<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container" style="margin-left: auto; margin-right: auto;"><tbody><tr><td style="text-align: center;"><a href="{url_img}" style="margin-left: auto; margin-right: auto;"><img alt="{alt_title}" border="0" data-original-height="1152" data-original-width="2048" height="360" src="{url_img}" title="{alt_title}" width="640" /></a></td></tr><tr><td class="tr-caption" style="text-align: center;">{legenda}</td></tr></tbody></table><br />'''
+    """Gera a estrutura HTML de imagem padrão do Blogger com legenda centralizada."""
+    return f'''<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container" style="margin-left: auto; margin-right: auto;"><tbody><tr><td style="text-align: center;"><img alt="{alt_title}" border="0" height="360" src="{url_img}" title="{alt_title}" width="640" /></td></tr><tr><td class="tr-caption" style="text-align: center;">{legenda}</td></tr></tbody></table><br />'''
+
+
+def extrair_palavra_chave(titulo):
+    """Pede pra IA uma palavra-chave em inglês que descreva visualmente o assunto real da notícia."""
+    prompt_tag = (
+        f"Baseado neste título de notícia: '{titulo}', dê apenas UMA palavra-chave em inglês "
+        f"que descreva visualmente o assunto principal, para buscar uma foto relacionada "
+        f"(ex: 'earthquake', 'football', 'smartphone', 'election', 'hospital', 'comics'). "
+        f"Responda só a palavra, sem explicação."
+    )
+    return pedir_ia_groq(prompt_tag, temperatura=0.3).strip().lower().split()[0]
+
+
+def gerar_imagem_relevante(palavra_chave):
+    """Busca uma imagem gratuita relacionada ao TEMA REAL da notícia (não aleatória)."""
+    termo_limpo = palavra_chave.replace(" ", ",")
+    return f"https://source.unsplash.com/1600x900/?{termo_limpo}"
+
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
-    imgs = [f"https://picsum.photos/seed/{random.randint(1, 9999)}/2048/1152" for _ in range(3)]
+    palavra_chave = extrair_palavra_chave(titulo)
+    img_principal = gerar_imagem_relevante(palavra_chave)
+    img_secundaria = gerar_imagem_relevante(palavra_chave)
 
     prompt_titulo = (
         f"Crie um título inédito, sem aspas, chamativo e em português do Brasil para esta notícia: '{titulo}'. "
@@ -163,55 +159,58 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     )
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
 
-    img1_html = gerar_tabela_imagem_blogger(imgs[0], novo_titulo, f"Destaque: {novo_titulo}")
-    img2_html = gerar_tabela_imagem_blogger(imgs[1], novo_titulo, f"Análise dos fatos principais")
-    img3_html = gerar_tabela_imagem_blogger(imgs[2], novo_titulo, f"Desdobramentos e detalhes da notícia")
-
-    caixa_cta_html = '''<div style="background-color: #ffeef4; border-radius: 16px; border: 2px solid rgb(255, 0, 127); box-shadow: rgba(255, 0, 127, 0.15) 0px 4px 20px; color: #2d3748; font-family: sans-serif; margin: 40px 0px; padding: 25px;"><p style="color: #ff007f; font-size: 20px; font-weight: bold; margin-top: 0px; text-align: center;">🎯 Atenção Apaixonado por Notícias e Descontos Exclusivos!</p><p style="font-size: 15px; line-height: 1.6;">Você sabia que existe um <a href="http://s.shopee.com.br/5VQHqQtgyf" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">método revolucionário</a> para economizar de verdade nas suas compras online diariamente? Com os <b>Cupons diários da Shopee</b>, você tem <a href="http://glamourpicklessteward.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">acesso imediato</a> na sua conta a frete grátis, cashback <a href="http://s.shopee.com.br/5fSxez7gvs" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">exclusivo</a> e descontos incríveis!</p><p style="font-size: 15px; line-height: 1.6;">Não perca mais tempo pagando caro. Este é o <a href="http://s.shopee.com.br/5VQHqQtgyf" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">treinamento mais completo</a> para o seu bolso! Acesse todos os dias pelo link oficial e garanta a sua <a href="http://s.shopee.com.br/5VQHqQtgyf" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">transformação definitiva</a> financeira ao <a href="http://glamourpicklessteward.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">resgatar</a> as melhores ofertas antes de todo mundo.</p><p style="font-size: 15px; line-height: 1.6;">Clique <a href="http://glamourpicklessteward.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">abaixo</a> agora mesmo e faça do seu dia a dia de compras uma verdadeira <a href="http://s.shopee.com.br/5fSxez7gvs" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">economia</a> inteligente!</p><div style="text-align: center;"><a href="http://s.shopee.com.br/5VQHqQtgyf" style="background-color: #ff007f; border-radius: 12px; box-shadow: rgba(255, 0, 127, 0.3) 0px 4px 10px; color: white; display: inline-block; font-size: 16px; font-weight: bold; margin-top: 15px; padding: 14px 28px; text-align: center; text-decoration: none;" target="_blank">👉 Quero Adquirir Meus Cupons Agora!</a></div></div>'''
+    img1_html = gerar_tabela_imagem_blogger(img_principal, novo_titulo, novo_titulo)
+    img2_html = gerar_tabela_imagem_blogger(img_secundaria, novo_titulo, "Entenda os detalhes")
 
     prompt_texto = f"""
-    Você é um jornalista e redator SEO profissional de um portal popular.
-    Escreva um artigo completo, envolvente e fluído em Português do Brasil com base nas informações fornecidas.
+    Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
+    Escreva um artigo completo, envolvente e fluido em português, com base nas informações reais abaixo.
 
-    REGRAS OBRIGATÓRIAS DE FORMATO (HTML PURO):
-    1. Retorne APENAS HTML PURO. NUNCA use Markdown (sem **, sem #, sem ```html).
-    2. Envolva TODOS os parágrafos nas tags <p> e </p>.
-    3. Crie 3 subtítulos usando a tag <h2>Subtítulo Aqui</h2>.
-    4. NÃO insira textos soltos como "Nota do autor".
+    REGRAS DE FORMATO (HTML PURO):
+    1. Retorne APENAS HTML puro. NUNCA use Markdown (sem **, sem #, sem ```html).
+    2. Envolva todos os parágrafos em tags <p>.
+    3. Crie 2 subtítulos usando a tag <h2>.
+    4. Logo após o primeiro <h2>, insira exatamente este trecho: {img2_html}
+    5. Depois de cada subtítulo ou a cada 2-3 parágrafos, insira UMA nota do autor engraçada e
+       leve dentro de uma tag <blockquote>, comentando a notícia com humor, como se fosse uma
+       observação pessoal e descontraída do redator (mantendo respeito ao tema, sem piadas
+       ofensivas). Não exagere: no máximo 2 notas do autor no artigo inteiro.
+    6. Não insira nenhum link dentro do corpo do texto. Nenhum. O texto deve ser 100%
+       informativo, sem links de afiliado, sem "clique aqui", sem chamadas de venda.
+    7. NÃO invente fatos, números ou declarações que não estejam no resumo fornecido.
 
-    REGRAS DE DENSIDADE E ESTILO DE LINKS DE AFILIADOS / INTERNOS:
-    - Inclua de 4 a 7 links por parágrafo no texto, hiperlinkando em âncoras persuasivas como: "método revolucionário", "jornada transformadora", "segredo do sucesso", "passo a passo definitivo", "oportunidade única", "aprender com especialistas", "transformação definitiva", "conteúdo exclusivo".
-    - OBRIGATÓRIO: Aplique o estilo inline exato `style="color: #ff007f; font-weight: bold;" target="_blank"` em TODOS os links.
-    - Intercale rigorosamente as seguintes URLs entre as âncoras:
-      * [http://s.shopee.com.br/5VQHqQtgyf](http://s.shopee.com.br/5VQHqQtgyf)
-      * [http://s.shopee.com.br/5fSxez7gvs](http://s.shopee.com.br/5fSxez7gvs)
-      * [http://glamourpicklessteward.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6](http://glamourpicklessteward.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6)
-      * [http://glamourpicklessteward.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1](http://glamourpicklessteward.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1)
-      * [https://cabinepopnews.blogspot.com/2026/05/a-saga-do-ceu-e-real-o-fim-de-next.html](https://cabinepopnews.blogspot.com/2026/05/a-saga-do-ceu-e-real-o-fim-de-next.html)
-
-    ONDE INSERIR AS IMAGENS SECUNDÁRIAS:
-    - Após o primeiro subtítulo <h2>, inclua a marcação: {img2_html}
-    - Após o segundo subtítulo <h2>, inclua a marcação: {img3_html}
-
-    Notícia Original capturada ({nome_fonte}):
-    Link da fonte: {link_fonte}
+    Notícia original capturada (fonte: {nome_fonte}):
     Título: {titulo}
     Resumo: {resumo}
     """
 
     conteudo_reescrito = pedir_ia_groq(prompt_texto)
 
-    html_final = f"""<p>&nbsp;</p>{img1_html}
+    # Caixa de publicidade ÚNICA, no final, claramente identificada como anúncio.
+    # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
+    caixa_publicidade = ""
+    if LINK_AFILIADO:
+        caixa_publicidade = f"""
+        <div style="background-color: #fff8e1; border: 1px solid #f0d68a; border-radius: 10px; margin: 30px 0; padding: 20px; font-family: sans-serif;">
+            <p style="font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Publicidade</p>
+            <p style="font-size: 15px; color: #333; margin: 0 0 12px 0;">Aproveite ofertas selecionadas enquanto navega pelo blog:</p>
+            <a href="{LINK_AFILIADO}" target="_blank" rel="nofollow sponsored"
+               style="background-color: #ff007f; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+               Ver ofertas
+            </a>
+        </div>
+        """
+
+    html_final = f"""{img1_html}
 {conteudo_reescrito}
-
-{caixa_cta_html}
-
+{caixa_publicidade}
 <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
 <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
     📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
 </p>"""
 
     return novo_titulo, html_final
+
 
 def obter_credenciais():
     return Credentials(
@@ -221,6 +220,7 @@ def obter_credenciais():
         client_secret=CLIENT_SECRET,
         token_uri="https://oauth2.googleapis.com/token",
     )
+
 
 def publicar_no_blogger(titulo, conteudo):
     creds = obter_credenciais()
@@ -234,6 +234,7 @@ def publicar_no_blogger(titulo, conteudo):
 
     resultado = blogger.posts().insert(blogId=BLOGGER_ID, body=corpo_postagem).execute()
     print(f"🔥 Sucesso! Post criado: '{titulo}' -> {resultado.get('url')}")
+
 
 if __name__ == "__main__":
     print("🚀 Iniciando busca por notícia inédita...")
