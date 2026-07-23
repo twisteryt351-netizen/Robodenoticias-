@@ -29,12 +29,10 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 # Modelo mais capaz do Groq (ainda gratuito), evita repetição e texto raso
 MODELO_IA = "llama-3.3-70b-versatile"
 
-# --- SEU LINK DE AFILIADO (opcional) ---
-# Coloque aqui SEU link de afiliado real e legítimo (ex: Shopee, Amazon Associates, etc).
-# Ele vai aparecer em UMA ÚNICA caixa no final do post, claramente identificada como
-# "Publicidade" — isso é o que te protege de banimento por link stuffing/cloaking.
-LINK_AFILIADO = os.environ.get("LINK_AFILIADO", "")  # deixe vazio se não tiver ainda
-
+# --- SEU LINK´s DE AFILIADO (OBRIGATÓRIO) ---
+OS LINKS TEM QUE SER DISTRIBUIDOS EM PALAVRAS DE IMPACTO DE 5 A 8 POR PARAGRAFO, randomicamente sem ordem!
+Lista de links separados por vírgula(,): http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6,
+http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1, http://s.shopee.com.br/5VQHqQtgyf, http://www.instagram.com/auracristalencantos, http://solucaodigitalshop.blogspot.com, http://cabinepopnews.blogspot.com, http://s.shopee.com.br/2qTBX58t8P, http://s.shopee.com.br/9zwM4HodQI
 # --- FONTES RSS ---
 FONTES = {
     # Portais de Notícias Gerais
@@ -262,8 +260,9 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
 
     prompt_texto = f"""
     Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
+    Com dialogo convsersacional, descontraido e divertido! 
     Escreva um artigo COMPLETO e APROFUNDADO em português, com base nas informações reais abaixo.
-    O artigo deve ter NO MÍNIMO 1400 palavras. Isso é obrigatório — desenvolva bem cada ângulo,
+    O artigo deve ter NO MÍNIMO 1800+ palavras. Isso é obrigatório — desenvolva bem cada ângulo,
     dê contexto histórico/geográfico quando fizer sentido, explique repercussões possíveis,
     e aprofunde cada ponto em vez de ser breve.
     NÃO repita a mesma frase ou ideia mais de uma vez. Cada parágrafo deve trazer informação nova.
@@ -275,10 +274,10 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
        análise (contexto, detalhes técnicos, reações, repercussão, o que vem a seguir, etc).
     4. Logo após o primeiro <h2>, insira exatamente este trecho: {img2_html}
     {instrucao_humor}
-    6. Não insira nenhum link dentro do corpo do texto. Nenhum. O texto deve ser 100%
-       informativo, sem links de afiliado, sem "clique aqui", sem chamadas de venda.
+    6. Insira link´s de afiliados dentro do corpo do texto. texto deve ser 100%
+       informativo, com links de afiliado. Minimo de 5 links e maximo de 8 em palavras de impacto no post!
     7. NÃO invente fatos, números ou declarações que não estejam no resumo fornecido — mas
-       PODE contextualizar com conhecimento histórico/geral real e relevante ao tema.
+       PODE contextualizar com conhecimento histórico/geral real e relevante ao tema. Cidanto as fontes.
     8. Escreva NO MÍNIMO 8 parágrafos substanciais (bem distribuídos entre os subtítulos),
        cada um trazendo um ângulo diferente da notícia — nunca reafirmando o que já foi dito.
 
@@ -301,10 +300,16 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     </div>
     """
 
-    # Caixa de publicidade ÚNICA, no final, claramente identificada como anúncio.
+    # Caixa de publicidade ÚNICA, no meio do post, claramente identificada como anúncio.
     # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
-    caixa_publicidade = ""
-    if LINK_AFILIADO:
+    caixa_publicidade exemplo = "🎯 Atenção Colecionador e Amante de Descontos!
+
+Você sabia que existe um método revolucionário para economizar de verdade nas suas compras online diariamente? Com os Cupons diários da Shopee, você tem acesso imediato na sua conta a frete grátis, cashback exclusivo e descontos insanos de até 80% Off em milhares de itens, incluindo gibis clássicos, colecionáveis de tokusatsu e tudo mais que você deseja!
+
+Não perca mais tempo pagando caro em suas compras. Este é o treinamento mais completo para o seu bolso! Entre todos os dias no link oficial e garanta a sua transformação definitiva financeira ao resgatar as melhores ofertas antes de todo mundo.
+
+Clique abaixo agora mesmo e faça do seu dia a dia de compras uma verdadeira economia inteligente com especialistas em custo-benefício!"
+    if LINK_AFILIADO: http://s.shopee.com.br/5VQHqQtgyf
         caixa_publicidade = f"""
         <div style="background-color: #fff8e1; border: 1px solid #f0d68a; border-radius: 10px; margin: 30px 0; padding: 20px; font-family: sans-serif;">
             <p style="font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Publicidade</p>
