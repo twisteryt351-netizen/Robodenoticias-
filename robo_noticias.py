@@ -350,13 +350,13 @@ html_final = f"""{img1_html}
 </p>"""
 return novo_titulo, html_final
 def obter_credenciais():
+    return Credentials(
+        token=None,
         refresh_token=REFRESH_TOKEN,
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         token_uri="https://oauth2.googleapis.com/token",
-        )
-
-
+    )
 def publicar_no_blogger(titulo, conteudo):
     creds = obter_credenciais()
     blogger = build('blogger', 'v3', credentials=creds)
