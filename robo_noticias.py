@@ -237,12 +237,43 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     imagens = buscar_imagens_openverse(palavra_chave, quantidade=2)
     img_principal, img_secundaria = imagens[0], imagens[1]
 
-    # Título novo
+    # Gera título novo
     prompt_titulo = (
         f"Crie um título inédito, sem aspas, chamativo e em português do Brasil para esta notícia: '{titulo}'. "
         f"Responda APENAS com o título em texto puro, sem tags HTML."
     )
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
+
+    # Gera meta tags SEO
+    prompt_seo = f"""
+    Baseado no título e resumo abaixo, gere duas tags meta:
+    1. meta description: uma frase curta (máx. 160 caracteres) que resuma a notícia de forma atrativa, incluindo palavras-chave.
+    2. meta keywords: até 10 palavras-chave separadas por vírgula, relevantes para o assunto.
+
+    Título: {titulo}
+    Resumo: {resumo}
+
+    Responda EXATAMENTE neste formato:
+    DESC: [descrição]
+    KEYS: [palavras-chave]
+    """
+    resposta_seo = pedir_ia_groq(prompt_seo, temperatura=0.3)
+    descricao = ""
+    keywords = ""
+    for linha in resposta_seo.splitlines():
+        if linha.startswith("DESC:"):
+            descricao = linha.replace("DESC:", "").strip()
+        elif linha.startswith("KEYS:"):
+            keywords = linha.replace("KEYS:", "").strip()
+    if not descricao:
+        descricao = f"{novo_titulo[:150]} - Fique por dentro dos detalhes."
+    if not keywords:
+        keywords = "notícias, atualidades, brasil, mundo, política, esportes, entretenimento"
+
+    meta_tags = f"""<!-- SEO Meta -->
+<meta name="description" content="{descricao}" />
+<meta name="keywords" content="{keywords}" />
+<!-- Fim SEO Meta -->"""
 
     img1_html = gerar_tabela_imagem_blogger(img_principal, novo_titulo, novo_titulo)
     img2_html = gerar_tabela_imagem_blogger(img_secundaria, novo_titulo, "Entenda os detalhes")
@@ -250,40 +281,38 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     assunto_leve = eh_assunto_leve(titulo, resumo)
 
     # ================================================================
-    # PROMPT FOCADO EM SEO E TOM
+    # PROMPT DO ARTIGO
     # ================================================================
     if assunto_leve:
-        humor_instrucao = """OBRIGATÓRIO: Após o PRIMEIRO subtítulo (<h2>), insira uma NOTA DO AUTOR em formato de piada ou comentário descontraído, dentro de <blockquote>. 
-Exemplo: <blockquote>E olha que o Athletico já vinha numa crescente, mas virar o jogo depois de sair perdendo? Isso é coisa de time que não desiste fácil! Quem nunca torceu contra o relógio, né?</blockquote>"""
+        humor_instrucao = """
+OBRIGATÓRIO: Após o PRIMEIRO subtítulo (<h2>), insira uma NOTA DO AUTOR em formato de piada ou comentário descontraído, dentro de <blockquote>.
+Exemplo: <blockquote>E olha que o Trump já passou por tanta coisa, mas agora a coisa ficou séria! Quem diria que os documentos de Mar-a-Lago iam dar nisso?</blockquote>
+"""
     else:
         humor_instrucao = "NÃO use piadas, brincadeiras ou tom descontraído. Mantenha respeito e sobriedade."
 
-    prompt_texto = f"""Escreva um artigo jornalístico otimizado para SEO em português do Brasil sobre:
+    prompt_texto = f"""Escreva um artigo jornalístico em português do Brasil sobre:
 
 Título original: {titulo}
 Resumo: {resumo}
 Fonte: {nome_fonte}
 
-INSTRUÇÕES DE CONTEÚDO E SEO:
-- O artigo deve ter TOM DESCONTRAÍDO E CONVERSACIONAL, como se você estivesse contando a história para um amigo no bar.
-- Use gírias brasileiras: "bora lá", "segura essa", "pode crer", "é isso aí", "tá ligado".
-- Cada subtítulo (<h2>) deve ser uma pergunta ou frase com palavras-chave relevantes ao tema.
-- Inclua pelo menos uma lista (<ul> ou <ol>) com itens relacionados (ex: motivos, dicas, comparações).
-- Use palavras-chave naturalmente ao longo do texto.
-- NUNCA repita a mesma informação. Cada parágrafo deve trazer algo novo.
-- Crie pelo menos 4 subtítulos (<h2>) sobre diferentes ângulos: contexto, lances do jogo, reações, comparações, futuro.
+INSTRUÇÕES:
+- O artigo deve ter TOM DESCONTRAÍDO E CONVERSACIONAL (se o assunto permitir), usando gírias como "bora lá", "segura essa", "pode crer".
+- NUNCA repita a mesma informação em parágrafos diferentes.
+- Crie pelo menos 4 subtítulos com <h2>, cada um abordando um ângulo diferente (histórico, detalhes, reações, comparações, futuro).
 - {humor_instrucao}
-- Escreva pelo menos 8 parágrafos com conteúdo substancial.
-- NÃO invente fatos. Use apenas as informações do resumo.
-- Evite frases prontas como "é importante lembrar" ou "é fundamental".
+- Escreva pelo menos 10 parágrafos com conteúdo substancial.
+- NÃO invente fatos. Use apenas o resumo, mas contextualize com conhecimento real.
+- Evite frases prontas como "é importante lembrar".
 
-Comece direto com o artigo em HTML puro, usando <p> e <h2>.
+Comece direto com o artigo em HTML puro, com <p> e <h2>.
 """
 
     conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.8)
 
     # ================================================================
-    # REMOVER REPETIÇÕES
+    # REMOVER REPETIÇÕES DE PARÁGRAFOS
     # ================================================================
     def remover_repetidos(texto):
         paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
@@ -317,14 +346,13 @@ Comece direto com o artigo em HTML puro, usando <p> e <h2>.
     conteudo_reescrito = remover_repetidos(conteudo_reescrito)
 
     # ================================================================
-    # GARANTIR NOTA DO AUTOR
+    # GARANTIR NOTA DO AUTOR (se for assunto leve e não tiver <blockquote>)
     # ================================================================
     if assunto_leve and '<blockquote>' not in conteudo_reescrito:
         notas = [
-            "<blockquote>E olha que o Athletico já vinha numa crescente, mas virar o jogo depois de sair perdendo? Isso é coisa de time que não desiste fácil! Quem nunca torceu contra o relógio, né?</blockquote>",
-            "<blockquote>O São Paulo deve estar se perguntando: 'como a gente perdeu essa?' Pois é, no futebol a virada é um dos maiores prazeres da torcida... e uma das maiores dores também.</blockquote>",
-            "<blockquote>Dá pra imaginar a cara do técnico do São Paulo no vestiário depois do apito final. Deve ter sido um misto de frustração e 'precisamos melhorar nos próximos jogos'.</blockquote>",
-            "<blockquote>E lá vai o Athletico-PR mostrando que não é só time de meio de tabela não! Com essa virada, eles mandaram um recado: 'tão olhando pra quem?'</blockquote>"
+            "<blockquote>E olha que o Trump já passou por tanta coisa, mas agora a coisa ficou séria! Quem diria que os documentos de Mar-a-Lago iam dar nisso?</blockquote>",
+            "<blockquote>Dá pra imaginar a cara do ex-presidente no tribunal. Deve ter sido um misto de 'isso é perseguição' e 'vamos ver no que dá'.</blockquote>",
+            "<blockquote>Os EUA estão fervendo com esse caso. Enquanto isso, a gente aqui torcendo para que a justiça seja feita, né?</blockquote>"
         ]
         nota = random.choice(notas)
         if '<h2>' in conteudo_reescrito:
@@ -337,7 +365,7 @@ Comece direto com o artigo em HTML puro, usando <p> e <h2>.
             conteudo_reescrito = nota + '\n' + conteudo_reescrito
 
     # ================================================================
-    # INSERIR LINKS EM TODOS OS PARÁGRAFOS (repetindo à vontade)
+    # INSERIR LINKS DE AFILIADO REPETIDOS À VONTADE
     # ================================================================
     LINKS_AFILIADOS = [
         "http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6",
@@ -363,40 +391,38 @@ Comece direto com o artigo em HTML puro, usando <p> e <h2>.
         "se você quer economizar nas compras", "enquanto você lê essa matéria"
     ]
 
-    def inserir_links_repetidos(texto):
-        # Divide o texto em parágrafos
+    def inserir_links_repetidos(texto, densidade=0.3):
+        """
+        Insere links em parágrafos aleatoriamente.
+        densidade = probabilidade de um parágrafo receber um link (0 a 1).
+        Um mesmo link pode aparecer várias vezes.
+        """
         paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
         if not paragrafos:
             return texto
 
         novos_paragrafos = []
         for p in paragrafos:
-            # Quantos links inserir neste parágrafo (entre 5 e 8)
-            num_links = random.randint(5, 8)
-            # Escolhe links aleatórios (podem se repetir)
-            links_escolhidos = random.choices(LINKS_AFILIADOS, k=num_links)
-            # Embaralha para distribuir no texto
-            random.shuffle(links_escolhidos)
-
-            # Para cada link, insere uma âncora aleatória
-            for link in links_escolhidos:
+            # Decide se insere link neste parágrafo
+            if random.random() < densidade:
+                link = random.choice(LINKS_AFILIADOS)
                 anchor = random.choice(ANCHORS)
-                # Insere o link em uma posição aleatória dentro do parágrafo
-                # Dividimos o texto em palavras para inserir no meio
+                # Insere o link em posição aleatória dentro do texto
                 palavras = p.split()
-                if len(palavras) > 5:
-                    pos = random.randint(2, len(palavras)-2)
+                if len(palavras) > 4:
+                    pos = random.randint(2, len(palavras)-1)
                     palavras.insert(pos, f'<a href="{link}" target="_blank">{anchor}</a>')
-                    p = ' '.join(palavras)
+                    novo_p = ' '.join(palavras)
                 else:
-                    # Se o parágrafo for curto, adiciona no final
-                    p = p + f' <a href="{link}" target="_blank">{anchor}</a>'
-
-            novos_paragrafos.append(f'<p>{p}</p>')
+                    novo_p = p + f' <a href="{link}" target="_blank">{anchor}</a>'
+                novos_paragrafos.append(f'<p>{novo_p}</p>')
+            else:
+                novos_paragrafos.append(f'<p>{p}</p>')
 
         return '\n'.join(novos_paragrafos)
 
-    conteudo_reescrito = inserir_links_repetidos(conteudo_reescrito)
+    # Aplica com densidade 0.4 (cerca de 40% dos parágrafos ganham link)
+    conteudo_reescrito = inserir_links_repetidos(conteudo_reescrito, densidade=0.4)
 
     # ================================================================
     # CORREÇÃO: SUBTÍTULOS DENTRO DE <p>
@@ -405,24 +431,7 @@ Comece direto com o artigo em HTML puro, usando <p> e <h2>.
     conteudo_reescrito = re.sub(r'</h2>\s*</p>', '</h2>', conteudo_reescrito)
 
     # ================================================================
-    # GERAR META DESCRIPTION E KEYWORDS (SEO)
-    # ================================================================
-    # Pega os primeiros 150 caracteres do conteúdo sem tags para gerar a descrição
-    texto_limpo = re.sub(r'<[^>]+>', '', conteudo_reescrito)
-    meta_description = texto_limpo[:150].strip() + "..."
-    # Palavras-chave: extrai algumas do título e do resumo
-    palavras_chave = set(re.findall(r'\b\w{4,}\b', titulo + " " + resumo))
-    palavras_chave = " ".join(list(palavras_chave)[:8])
-
-    # Adiciona tags de SEO no início do post (dentro de um comentário HTML)
-    seo_tags = f"""<!-- SEO Meta -->
-<meta name="description" content="{meta_description}" />
-<meta name="keywords" content="{palavras_chave}" />
-<!-- Fim SEO Meta -->
-"""
-
-    # ================================================================
-    # MONTAGEM FINAL
+    # MONTAGEM FINAL (com meta tags no topo)
     # ================================================================
     caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
 <p style="font-size: 17px; font-weight: bold; color: #333; margin: 0 0 10px 0;">Gostou desta matéria?</p>
@@ -446,7 +455,8 @@ Comece direto com o artigo em HTML puro, usando <p> e <h2>.
         '</div>'
     )
 
-    html_final = f"""{seo_tags}
+    html_final = f"""{meta_tags}
+
 {img1_html}
 {conteudo_reescrito}
 
