@@ -1,121 +1,29 @@
-import os
-import random
-import time
-import feedparser
-from groq import Groq
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-
-# --- CONFIGURAÇÕES (variáveis de ambiente) ---
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-BLOGGER_ID = os.environ.get("BLOGGER_ID")
-CLIENT_ID = os.environ.get("BLOGGER_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("BLOGGER_CLIENT_SECRET")
-REFRESH_TOKEN = os.environ.get("BLOGGER_REFRESH_TOKEN")
-
-for nome, valor in [
-    ("GROQ_API_KEY", GROQ_API_KEY),
-    ("BLOGGER_ID", BLOGGER_ID),
-    ("BLOGGER_CLIENT_ID", CLIENT_ID),
-    ("BLOGGER_CLIENT_SECRET", CLIENT_SECRET),
-    ("BLOGGER_REFRESH_TOKEN", REFRESH_TOKEN),
-]:
-    if not valor:
-        raise ValueError(f"Faltou configurar a variável/segredo: {nome}")
-
-groq_client = Groq(api_key=GROQ_API_KEY)
-
-# --- FONTES RSS ---
-FONTES = {
-    "G1": "https://g1.globo.com/rss/g1/",
-    "G1 Tecnologia": "https://g1.globo.com/rss/g1/tecnologia/",
-    "UOL Notícias": "https://rss.uol.com.br/feed/noticias.xml",
-    "Terra Notícias": "https://terra.com.br/rss/noticias/",
-    "R7 Notícias": "https://noticias.r7.com/feed/",
-    "Band Notícias": "https://band.com.br/rss/noticias/",
-    "BBC Brasil": "https://www.bbc.com/portuguese/index.xml",
-    "Folha de S.Paulo": "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml",
-    "O Globo": "https://oglobo.globo.com/rss/",
-    "Veja": "https://veja.abril.com.br/feed/",
-    "Globo Esporte": "https://ge.globo.com/rss/",
-    "Omelete": "https://www.omelete.com.br/sitemap-news.xml",
-    "TecMundo": "https://tecmundo.com.br/feed/",
-    "Canaltech": "https://canaltech.com.br/feed/",
-    "Quem Acontece": "https://quem.globo.com/rss/",
-    "BBC News (Mundo)": "http://feeds.bbci.co.uk/news/world/rss.xml",
-}
-
-ARQUIVO_HISTORICO = "historico_postados.txt"
-
-def ja_foi_postada(link):
-    if not os.path.exists(ARQUIVO_HISTORICO):
-        return False
-    with open(ARQUIVO_HISTORICO, "r", encoding="utf-8") as f:
-        return link in f.read()
-
-def marcar_como_postada(link):
-    with open(ARQUIVO_HISTORICO, "a", encoding="utf-8") as f:
-        f.write(link + "\n")
-
-def pegar_noticia_multiplas_fontes():
-    fontes_lista = list(FONTES.items())
-    random.shuffle(fontes_lista)
-    tentativas = 0
-    max_tentativas = 50
-
-    for nome_fonte, url_rss in fontes_lista:
-        try:
-            feed = feedparser.parse(url_rss, agent="Mozilla/5.0")
-        except Exception as e:
-            continue
-
-        for entrada in feed.entries[:5]:
-            tentativas += 1
-            if tentativas > max_tentativas:
-                return None, None, None, None
-
-            link = entrada.get("link")
-            titulo = entrada.get("title")
-            resumo = entrada.get("summary") or entrada.get("description") or ""
-
-            if not link or not titulo:
-                continue
-
-            if not ja_foi_postada(link):
-                print(f"✅ Notícia inédita encontrada em {nome_fonte}: {titulo[:60]}...")
-                return titulo, resumo, link, nome_fonte
-
-    return None, None, None, None
-
-def gerar_imagem_gratis():
-    # Gerador Picsum com seed aleatório (100% funcional)
-    seed = random.randint(1, 1000)
-    return f"https://picsum.photos/seed/{seed}/800/400"
-
-def pedir_ia_groq(prompt):
-    response = groq_client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama-3.1-8b-instant",
-        temperature=0.7,
-    )
-    return response.choices[0].message.content.strip()
-
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
-    prompt_texto = f"""
-    Você é um jornalista de um portal popular no Brasil. 
-    Escreva um artigo de notícia completo e descontraído em Português do Brasil com base no tema abaixo.
+    # Geramos 4 imagens com seeds diferentes para não repetirem
+    imgs = [f"https://picsum.photos/seed/{random.randint(1, 9999)}/800/400" for _ in range(4)]
 
-    REGRAS DE FORMATO E CONTEÚDO OBRIGATÓRIAS:
-    1. Responda APENAS em HTML puro (use tags <p>, <h2>, <strong>, <ul>, <li>, <a>). NÃO USE MARKDOWN (nunca use **, #, ou lista de links no final).
-    2. Escreva um texto longo, bem explicado e fluido (mínimo 800 palavras).
-    3. Espalhe naturalmente DENTRO dos parágrafos do texto (sem criar uma lista no final) os seguintes links usando a tag HTML <a href="..." target="_blank">:
-       - Para ofertas variadas: <a href="http://s.shopee.com.br/5VQHqQtgyf" target="_blank">confira esta seleção especial</a>
-       - Para novidades do blog: <a href="http://cabinepopnews.blogspot.com" target="_blank">acesse mais notícias exclusivas</a>
-       - Para dicas e loja: <a href="http://solucaodigitalshop.blogspot.com" target="_blank">veja as novidades aqui</a>
-       - Para produtos em destaque: <a href="http://s.shopee.com.br/2qTBX58t8P" target="_blank">garanta descontos agora</a>
-    4. Inclua 3 subtítulos <h2> ao longo do artigo.
-    5. Insira 3 notas bem-humoradas do autor destacadas com <p><em>(Nota do autor: ...)</em></p>.
+    prompt_texto = f"""
+    Você é um especialista em jornalismo digital e SEO.
+    Escreva um artigo de notícia completo, descontraído e fluido em Português do Brasil com base nas informações fornecidas.
+
+    REGRAS OBRIGATÓRIAS DE FORMATO (HTML PURO):
+    1. Retorne APENAS HTML PURO. NUNCA use Markdown (sem **, sem #, sem listas soltas).
+    2. TODOS os parágrafos sem exceção DEVEM estar envolvidos nas tags <p> e </p>.
+    3. Crie 3 subtítulos usando a tag <h2>Subtítulo aqui</h2>.
+    4. Crie 3 notas do autor usando a tag <p><em>(Nota do autor: ...)</em></p>.
+
+    REGRAS PARA AS IMAGENS DO MEIO DO TEXTO:
+    No meio do artigo (entre os parágrafos e subtítulos), você DEVE inserir as 3 tags de imagem abaixo exatamente como fornecidas:
+    - [IMAGEM_2]
+    - [IMAGEM_3]
+    - [IMAGEM_4]
+
+    REGRAS DOS LINKS DE AFILIADO (DILUÍDOS NO TEXTO):
+    Não coloque os links no final! Insira-os naturalmente DENTRO das frases ao longo do texto:
+    - ...para economizar no dia a dia, <a href="http://s.shopee.com.br/5VQHqQtgyf" target="_blank">confira esta seleção especial</a> de ofertas.
+    - ...para ficar por dentro de tudo, <a href="http://cabinepopnews.blogspot.com" target="_blank">acesse mais notícias exclusivas</a> no blog.
+    - ...se você busca soluções práticas, <a href="http://solucaodigitalshop.blogspot.com" target="_blank">veja as novidades aqui</a> na loja.
+    - ...aproveite também para conferir e <a href="http://s.shopee.com.br/2qTBX58t8P" target="_blank">garantir descontos agora</a> nas promoções.
 
     Notícia Original ({nome_fonte}):
     Título: {titulo}
@@ -124,18 +32,52 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
 
     conteudo_reescrito = pedir_ia_groq(prompt_texto)
 
-    prompt_titulo = (
-        f"Crie um título inédito, sem aspas, chamativo e em português para esta notícia: '{titulo}'. "
-        f"Responda APENAS com o título em texto puro, sem tags."
-    )
-    novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
+    # Solicita à IA um título para a matéria e textos alternativos/atributos SEO para as 4 imagens
+    prompt_seo = f"""
+    Com base no tema '{titulo}', gere os seguintes textos em Português do Brasil:
+    1. Um título chamativo para a matéria (sem aspas).
+    2. 4 textos alternativos curtos e focados em SEO para as imagens (1 para cada imagem).
+    3. 4 textos de título (title) amigáveis para as imagens.
 
-    img_url = gerar_imagem_gratis()
+    Responda ESTRITAMENTE no seguinte formato JSON (sem blocos de código markdown):
+    {{
+      "titulo_post": "Título principal da matéria",
+      "alts": ["alt imagem 1", "alt imagem 2", "alt imagem 3", "alt imagem 4"],
+      "titles": ["title imagem 1", "title imagem 2", "title imagem 3", "title imagem 4"]
+    }}
+    """
+    
+    resposta_seo = pedir_ia_groq(prompt_seo)
+    
+    # Tratamento simples para extrair o JSON com segurança
+    try:
+        import json
+        # Limpa possíveis formatações de markdown que a IA possa enviar
+        json_limpo = resposta_seo.replace("```json", "").replace("```", "").strip()
+        dados_seo = json.loads(json_limpo)
+        novo_titulo = dados_seo.get("titulo_post", titulo)
+        alts = dados_seo.get("alts", [titulo]*4)
+        titles = dados_seo.get("titles", [titulo]*4)
+    except Exception:
+        # Backup caso ocorra erro no parse do JSON
+        novo_titulo = pedir_ia_groq(f"Crie um título inédito para: '{titulo}'. Retorne só o texto.").replace('"', '').strip()
+        alts = [f"Imagem sobre {novo_titulo}"] * 4
+        titles = [f"Ilustração - {novo_titulo}"] * 4
 
+    # Monta a estrutura HTML das 4 imagens com Alt e Title SEO
+    img1_html = f'<div style="text-align: center; margin-bottom: 20px;"><img src="{imgs[0]}" alt="{alts[0]}" title="{titles[0]}" style="max-width:100%; height:auto; border-radius:8px;"/></div>'
+    img2_html = f'<div style="text-align: center; margin: 25px 0;"><img src="{imgs[1]}" alt="{alts[1]}" title="{titles[1]}" style="max-width:100%; height:auto; border-radius:8px;"/></div>'
+    img3_html = f'<div style="text-align: center; margin: 25px 0;"><img src="{imgs[2]}" alt="{alts[2]}" title="{titles[2]}" style="max-width:100%; height:auto; border-radius:8px;"/></div>'
+    img4_html = f'<div style="text-align: center; margin: 25px 0;"><img src="{imgs[3]}" alt="{alts[3]}" title="{titles[3]}" style="max-width:100%; height:auto; border-radius:8px;"/></div>'
+
+    # Substitui os marcadores de imagem no corpo do texto pelas tags HTML das imagens
+    conteudo_reescrito = conteudo_reescrito.replace("[IMAGEM_2]", img2_html)
+    conteudo_reescrito = conteudo_reescrito.replace("[IMAGEM_3]", img3_html)
+    conteudo_reescrito = conteudo_reescrito.replace("[IMAGEM_4]", img4_html)
+
+    # Montagem do HTML completo com a 1ª imagem no topo
     html_final = f"""
-    <div style="text-align: center; margin-bottom: 20px;">
-        <img src="{img_url}" alt="{novo_titulo}" style="max-width:100%; height:auto; border-radius:8px;"/>
-    </div>
+    {img1_html}
     {conteudo_reescrito}
     <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;">
     <p style="font-size: 12px; color: gray; font-style: italic;">
@@ -144,44 +86,3 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     """
 
     return novo_titulo, html_final
-
-def obter_credenciais():
-    creds = Credentials(
-        token=None,
-        refresh_token=REFRESH_TOKEN,
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
-        token_uri="https://oauth2.googleapis.com/token",
-    )
-    creds.refresh(Request())
-    return creds
-
-def publicar_no_blogger(titulo, conteudo):
-    creds = obter_credenciais()
-    blogger = build('blogger', 'v3', credentials=creds)
-
-    corpo_postagem = {
-        'kind': 'blogger#post',
-        'title': titulo,
-        'content': conteudo
-    }
-
-    resultado = blogger.posts().insert(blogId=BLOGGER_ID, body=corpo_postagem).execute()
-    print(f"🔥 Sucesso! Post criado: '{titulo}' -> {resultado.get('url')}")
-
-if __name__ == "__main__":
-    print("🚀 Iniciando busca por notícia inédita...")
-    titulo, resumo, link, fonte = pegar_noticia_multiplas_fontes()
-
-    if titulo:
-        print(f"📰 Notícia original: {titulo[:100]}...")
-        try:
-            novo_titulo, html_postagem = reescrever_com_ia_anti_plagio(titulo, resumo, link, fonte)
-            print("✍️ Conteúdo gerado com sucesso via Groq. Publicando...")
-            publicar_no_blogger(novo_titulo, html_postagem)
-            marcar_como_postada(link)
-            print("✅ Processo concluído.")
-        except Exception as e:
-            print(f"❌ Erro durante a geração ou publicação: {e}")
-    else:
-        print("❌ Nenhuma notícia nova disponível no momento.")
