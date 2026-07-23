@@ -280,7 +280,8 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     8. Escreva NO MÍNIMO 8 parágrafos substanciais (bem distribuídos entre os subtítulos),
        cada um trazendo um ângulo diferente da notícia — nunca reafirmando o que já foi dito.
     9. Lista de links separados por vírgula que deveram está em 5 a 8 palavras por paragrafo(OBRIGATÓRIO) DISFARÇADOS em palavras de impacto randomicamente: http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6, http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1, http://s.shopee.com.br/5VQHqQtgyf, http://www.instagram.com/auracristalencantos, http://solucaodigitalshop.blogspot.com, http://cabinepopnews.blogspot.com, http://s.shopee.com.br/2qTBX58t8P, http://s.shopee.com.br/9zwM4HodQI
-
+    10. OBRIGATORIO TEXTO ANTES DE SER PUBLICADO DEVE SER REVISADO COM CUIDADO PARA NÃO TER FRASES REPETIDAS. Artigo Completo e muito bem escrito e agradavel! 
+ 
     Notícia original capturada (fonte: {nome_fonte}):
     Título: {titulo}
     Resumo: {resumo}
