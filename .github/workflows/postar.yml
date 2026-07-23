@@ -3,7 +3,8 @@ name: Robo de Noticias Automatico
 on:
   schedule:
     - cron: '*/15 * * * *'
-
+  workflow_dispatch:
+  
 jobs:
   postar:
     runs-on: ubuntu-latest
