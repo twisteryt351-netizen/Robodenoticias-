@@ -233,8 +233,14 @@ import re
 import random
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
+    print("🔧 FUNÇÃO REESCREVER COM IA - VERSÃO DEFINITIVA")
+    
     palavra_chave = extrair_palavra_chave(titulo)
+    print(f"🔑 Palavra-chave: {palavra_chave}")
+    
     imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)
+    print(f"🖼️ {len(imagens)} imagens obtidas")
+    
     img_principal, img_secundaria, img_terciaria = imagens[0], imagens[1], imagens[2]
 
     # Título novo
@@ -243,6 +249,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
         f"Responda APENAS com o título em texto puro, sem tags HTML."
     )
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
+    print(f"📌 Novo título: {novo_titulo[:60]}...")
 
     # Meta tags SEO
     prompt_seo = f"""
@@ -280,14 +287,15 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     img3_html = gerar_tabela_imagem_blogger(img_terciaria, novo_titulo, "Impactos e repercussões")
 
     assunto_leve = eh_assunto_leve(titulo, resumo)
+    print(f"🎭 Assunto leve: {assunto_leve}")
 
     # ================================================================
-    # PROMPT: GERAR APENAS TEXTO PURO (SEM TAGS HTML)
+    # PROMPT: GERAR APENAS TEXTO PURO
     # ================================================================
     if assunto_leve:
-        tom = "Use linguagem natural e fluida, com um toque pessoal. Use no máximo 2 gírias."
+        tom = "Use linguagem natural e fluida, com um toque pessoal."
     else:
-        tom = "Use tom respeitoso e factual. Sem gírias ou piadas."
+        tom = "Use tom respeitoso e factual."
 
     prompt_texto = f"""Escreva um artigo jornalístico sobre esta notícia:
 
@@ -299,48 +307,38 @@ REGRAS:
 - Escreva 10 a 12 parágrafos.
 - Cada parágrafo deve ter pelo menos 3 frases.
 - NUNCA repita a mesma informação.
-- Não use títulos, subtítulos, negrito, itálico ou qualquer marcação HTML.
+- Não use títulos, subtítulos, negrito ou qualquer marcação HTML.
 - Separe os parágrafos com UMA linha em branco.
 
-Apenas o texto corrido, sem introdução.
+Apenas o texto corrido.
 """
 
     texto_bruto = pedir_ia_groq(prompt_texto, temperatura=0.75)
+    print(f"📝 Texto gerado com {len(texto_bruto)} caracteres")
 
     # ================================================================
     # PASSO 1: DIVIDIR EM PARÁGRAFOS
     # ================================================================
-    # Divide por duas quebras de linha (parágrafos separados por linha em branco)
     paragrafos = [p.strip() for p in texto_bruto.split('\n\n') if p.strip()]
-    
-    # Se não tiver parágrafos, tenta dividir por quebras simples
     if len(paragrafos) < 4:
         paragrafos = [p.strip() for p in texto_bruto.split('\n') if p.strip()]
-    
-    # Se ainda não tiver, divide por pontos finais
     if len(paragrafos) < 4:
-        # Divide por pontos e junta em grupos
         frases = [f.strip() + '.' for f in texto_bruto.split('.') if len(f.strip()) > 20]
         if len(frases) >= 4:
             paragrafos = []
             for i in range(0, len(frases), 3):
                 paragrafos.append(' '.join(frases[i:i+3]))
         else:
-            # Fallback final: usa o texto todo como um único parágrafo
             paragrafos = [texto_bruto]
 
-    print(f"📊 {len(paragrafos)} parágrafos extraídos.")
-
-    # Remove parágrafos muito curtos
+    # Remove parágrafos muito curtos e filtra repetidos
     paragrafos = [p for p in paragrafos if len(p) > 30]
-    
-    # Se não tiver parágrafos suficientes, duplica alguns
     while len(paragrafos) < 8:
-        paragrafos.append(paragrafos[-1] if paragrafos else "Texto adicional sobre o assunto.")
+        paragrafos.append(paragrafos[-1] if paragrafos else "Contexto adicional sobre o assunto abordado.")
 
-    # ================================================================
-    # PASSO 2: REMOVER REPETIÇÕES
-    # ================================================================
+    print(f"📊 {len(paragrafos)} parágrafos extraídos")
+
+    # Remove repetições
     paragrafos_unicos = []
     vistos = []
     for p in paragrafos:
@@ -363,11 +361,11 @@ Apenas o texto corrido, sem introdução.
         if not repetido:
             paragrafos_unicos.append(p)
             vistos.append(p_limpo)
-    
     paragrafos = paragrafos_unicos if len(paragrafos_unicos) >= 4 else paragrafos
+    print(f"📊 {len(paragrafos)} parágrafos após filtragem")
 
     # ================================================================
-    # PASSO 3: DISTRIBUIR PARÁGRAFOS ENTRE 4 SEÇÕES
+    # PASSO 2: DISTRIBUIR PARÁGRAFOS ENTRE 4 SEÇÕES
     # ================================================================
     h2_titulos = [
         "Contexto e Histórico",
@@ -379,7 +377,6 @@ Apenas o texto corrido, sem introdução.
     num_paragrafos = len(paragrafos)
     base = max(2, num_paragrafos // 4)
     resto = num_paragrafos % 4
-    
     indices_secoes = []
     start = 0
     for i in range(4):
@@ -389,13 +386,14 @@ Apenas o texto corrido, sem introdução.
         start = end
 
     # ================================================================
-    # PASSO 4: CONSTRUIR O HTML MANUALMENTE
+    # PASSO 3: CONSTRUIR HTML
     # ================================================================
     blocos = []
     
     for i, (inicio, fim) in enumerate(indices_secoes):
         # H2
         blocos.append(f"<h2>{h2_titulos[i]}</h2>")
+        print(f"   ➤ Adicionado H2: {h2_titulos[i]}")
         
         # Nota do autor APÓS O PRIMEIRO H2 (se assunto leve)
         if i == 0 and assunto_leve:
@@ -405,10 +403,12 @@ Apenas o texto corrido, sem introdução.
                 "<blockquote>Enquanto isso, a gente aqui acompanhando os desdobramentos. Bora ver no que vai dar, porque essa história ainda tem capítulos!</blockquote>"
             ]
             blocos.append(random.choice(notas))
+            print("   ➤ Nota do autor inserida")
         
         # Imagem secundária APÓS O PRIMEIRO H2
         if i == 0:
             blocos.append(img2_html)
+            print("   ➤ Imagem secundária inserida")
         
         # Parágrafos
         for p in paragrafos[inicio:fim]:
@@ -420,11 +420,13 @@ Apenas o texto corrido, sem introdução.
         # Imagem terciária APÓS O TERCEIRO H2
         if i == 2:
             blocos.append(img3_html)
+            print("   ➤ Imagem terciária inserida")
 
     conteudo_reescrito = '\n'.join(blocos)
+    print(f"📄 HTML montado com {len(blocos)} blocos")
 
     # ================================================================
-    # PASSO 5: INSERIR LINKS DE AFILIADO COM PALAVRAS DE IMPACTO
+    # PASSO 4: INSERIR LINKS DE AFILIADO (90% dos parágrafos)
     # ================================================================
     LINKS_AFILIADOS = [
         "http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6",
@@ -437,57 +439,57 @@ Apenas o texto corrido, sem introdução.
         "http://s.shopee.com.br/9zwM4HodQI"
     ]
 
-    # Palavras de impacto variadas (contextualizadas com o post)
+    # Palavras de impacto variadas
     ANCHORS = [
-        "veja os detalhes completos", "confira a análise aprofundada", "entenda os bastidores",
-        "acompanhe as atualizações", "descubra o que está por trás disso", "saiba o que realmente aconteceu",
-        "veja como isso afeta você", "entenda as implicações", "confira os desdobramentos",
-        "veja o panorama completo", "saiba como isso impacta", "descubra os próximos passos",
-        "entenda o contexto por trás", "veja o que está em jogo", "confira os números e dados",
-        "saiba mais sobre essa história", "veja como isso se desenrola", "entenda as consequências"
+        "confira os detalhes completos", "entenda os bastidores da negociação",
+        "veja como isso afeta o mercado", "acompanhe as atualizações em tempo real",
+        "descubra o que está por trás da decisão", "saiba o que realmente está em jogo",
+        "veja a análise aprofundada", "entenda as implicações para o futuro",
+        "confira os próximos passos", "veja o panorama completo da situação",
+        "saiba como isso impacta a economia", "entenda o contexto por trás da medida",
+        "veja os números e dados relevantes", "confira a visão dos especialistas",
+        "saiba mais sobre essa negociação", "veja como isso se desenrola nos próximos dias",
+        "entenda as consequências práticas", "confira o que está por vir"
     ]
 
-    def inserir_links_com_palavras_impacto(texto, densidade=0.85):
+    def inserir_links_com_palavras_impacto(texto, densidade=0.9):
         paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
         if not paragrafos:
             return texto
 
         novos = []
+        links_inseridos = 0
         for p in paragrafos:
             if len(p) < 60:
                 novos.append(f'<p>{p}</p>')
                 continue
 
-            # 85% dos parágrafos ganham link
             if random.random() < densidade:
                 link = random.choice(LINKS_AFILIADOS)
                 anchor = random.choice(ANCHORS)
-                
                 palavras = p.split()
                 if len(palavras) > 6:
-                    # Insere em posição aleatória
                     pos = random.randint(2, len(palavras)-2)
                     palavras.insert(pos, f'<a href="{link}" target="_blank">{anchor}</a>')
                     novo_p = ' '.join(palavras)
                 else:
-                    # Se o parágrafo for curto, insere no final
                     novo_p = p + f' <a href="{link}" target="_blank">{anchor}</a>'
                 novos.append(f'<p>{novo_p}</p>')
+                links_inseridos += 1
             else:
                 novos.append(f'<p>{p}</p>')
+        
+        print(f"🔗 {links_inseridos} links de afiliado inseridos em {len(paragrafos)} parágrafos")
         return '\n'.join(novos)
 
-    conteudo_reescrito = inserir_links_com_palavras_impacto(conteudo_reescrito, densidade=0.85)
+    conteudo_reescrito = inserir_links_com_palavras_impacto(conteudo_reescrito, densidade=0.9)
 
     # ================================================================
-    # PASSO 6: CORREÇÕES FINAIS
+    # PASSO 5: CORREÇÕES FINAIS
     # ================================================================
-    # Remove H2s duplicados acidentalmente
     conteudo_reescrito = re.sub(r'(<h2>.*?</h2>)\s*<h2>', r'\1', conteudo_reescrito)
-    # Corrige H2 dentro de P
     conteudo_reescrito = re.sub(r'<p>\s*<h2>', '<h2>', conteudo_reescrito)
     conteudo_reescrito = re.sub(r'</h2>\s*</p>', '</h2>', conteudo_reescrito)
-    # Remove tags vazias
     conteudo_reescrito = re.sub(r'<p>\s*</p>', '', conteudo_reescrito)
 
     # ================================================================
@@ -515,6 +517,7 @@ Apenas o texto corrido, sem introdução.
     📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
 </p>"""
 
+    print("✅ Função reescrever_com_ia_anti_plagio finalizada")
     return novo_titulo, html_final
 def obter_credenciais():
     return Credentials(
