@@ -234,7 +234,7 @@ import random
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     palavra_chave = extrair_palavra_chave(titulo)
-    imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)  # 3 IMAGENS
+    imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)
     img_principal, img_secundaria, img_terciaria = imagens[0], imagens[1], imagens[2]
 
     # Título novo
@@ -244,7 +244,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     )
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
 
-    # Gera meta tags SEO
+    # Meta tags SEO
     prompt_seo = f"""
     Baseado no título e resumo abaixo, gere duas tags meta:
     1. meta description: uma frase curta (máx. 160 caracteres) que resuma a notícia de forma atrativa.
@@ -282,12 +282,15 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     assunto_leve = eh_assunto_leve(titulo, resumo)
 
     # ================================================================
-    # PROMPT DO ARTIGO (APENAS O CONTEÚDO)
+    # PROMPT DO ARTIGO – FORÇANDO SUBTÍTULOS E VARIANDO GÍRIAS
     # ================================================================
     if assunto_leve:
-        humor_instrucao = "Use tom descontraído e gírias como 'bora lá', 'segura essa', 'pode crer'."
+        humor_instrucao = (
+            "Use tom descontraído, mas VARIE as expressões. Não repita 'bora lá' ou 'segura essa' em todo parágrafo. "
+            "Use sinônimos como 'vamos ver', 'pois é', 'e aí', 'tá certo', 'beleza', 'é isso'."
+        )
     else:
-        humor_instrucao = "Mantenha tom respeitoso e factual. NÃO use piadas."
+        humor_instrucao = "Mantenha tom respeitoso e factual. NÃO use piadas ou gírias."
 
     prompt_texto = f"""Escreva um artigo jornalístico em português do Brasil sobre:
 
@@ -295,14 +298,15 @@ Título: {titulo}
 Resumo: {resumo}
 Fonte: {nome_fonte}
 
-INSTRUÇÕES:
+INSTRUÇÕES OBRIGATÓRIAS:
 - {humor_instrucao}
-- NUNCA repita a mesma informação.
-- Crie pelo menos 4 subtítulos com <h2>.
-- Escreva entre 8 e 10 parágrafos (total de aproximadamente 800 palavras).
+- NUNCA repita a mesma informação em parágrafos diferentes.
+- Crie PELO MENOS 4 subtítulos com <h2> ao longo do texto. Exemplos de subtítulos: "Contexto Histórico", "O que mudou?", "Reações e polêmicas", "E agora, o que vem por aí?".
+- Escreva entre 8 e 10 parágrafos, totalizando aproximadamente 800 palavras.
 - NÃO invente fatos. Use apenas o resumo, mas contextualize com conhecimento real.
+- Comece direto com o artigo, sem introdução genérica.
 
-Comece direto com o artigo em HTML puro, com <p> e <h2>.
+Agora escreva o artigo completo em HTML puro, usando <p> para parágrafos e <h2> para subtítulos.
 """
 
     conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.8)
@@ -320,8 +324,8 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     TARGET_PALAVRAS = 800
     if palavras_atuais < TARGET_PALAVRAS - 50:
         prompt_extra = f"""
-        Escreva mais 2 a 3 parágrafos adicionando contexto ou análises sobre esta notícia.
-        Não repita informações já ditas. Use o mesmo tom.
+        Escreva mais 2 a 3 parágrafos adicionando contexto, análises ou repercussões sobre esta notícia.
+        Não repita informações já ditas. Use o mesmo tom, variando as expressões.
         Total alvo: {TARGET_PALAVRAS} palavras.
 
         Título: {titulo}
@@ -338,7 +342,7 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
         print(f"📊 Palavras após esticar: {contar_palavras_html(conteudo_reescrito)}")
 
     # ================================================================
-    # PASSO 2: REMOVER REPETIÇÕES
+    # PASSO 2: REMOVER REPETIÇÕES (similaridade > 55%)
     # ================================================================
     def remover_repetidos(texto):
         paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
@@ -372,10 +376,29 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     conteudo_reescrito = remover_repetidos(conteudo_reescrito)
 
     # ================================================================
-    # PASSO 3: GARANTIR SUBTÍTULOS (<h2>)
+    # PASSO 3: GARANTIR SUBTÍTULOS <h2>
     # ================================================================
     if '<h2>' not in conteudo_reescrito:
-        conteudo_reescrito = '<h2>Contexto da Notícia</h2>\n' + conteudo_reescrito
+        # Insere 4 subtítulos genéricos distribuídos no texto
+        h2_padrao = [
+            '<h2>Contexto da Notícia</h2>',
+            '<h2>Detalhes e Implicações</h2>',
+            '<h2>Reações e Análises</h2>',
+            '<h2>O Que Vem a Seguir</h2>'
+        ]
+        # Divide o texto em parágrafos
+        paragrafos = re.findall(r'<p>(.*?)</p>', conteudo_reescrito, re.DOTALL)
+        if paragrafos:
+            # Insere os h2 entre os parágrafos
+            novo_texto = ''
+            for i, p in enumerate(paragrafos):
+                if i < len(h2_padrao) and i % 2 == 0:  # insere a cada 2 parágrafos
+                    novo_texto += h2_padrao[i] + '\n'
+                novo_texto += f'<p>{p}</p>\n'
+            conteudo_reescrito = novo_texto
+        else:
+            # Fallback: insere no início
+            conteudo_reescrito = '\n'.join(h2_padrao) + '\n' + conteudo_reescrito
 
     # ================================================================
     # PASSO 4: GARANTIR NOTA DO AUTOR (se assunto leve)
@@ -387,10 +410,12 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
             "<blockquote>Enquanto isso, a gente aqui acompanhando os desdobramentos. Bora ver no que vai dar!</blockquote>"
         ]
         nota = random.choice(notas)
+        # Insere após o primeiro </h2> encontrado
         if '</h2>' in conteudo_reescrito:
             partes = conteudo_reescrito.split('</h2>', 1)
             conteudo_reescrito = partes[0] + '</h2>\n' + nota + '\n' + partes[1]
         else:
+            # Se não tiver h2, insere no início do primeiro parágrafo
             partes = conteudo_reescrito.split('<p>', 1)
             if len(partes) == 2:
                 conteudo_reescrito = partes[0] + '<p>' + nota + '\n' + partes[1]
@@ -398,19 +423,20 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
                 conteudo_reescrito = nota + '\n' + conteudo_reescrito
 
     # ================================================================
-    # PASSO 5: INSERIR A IMAGEM TERCIÁRIA NO MEIO DO TEXTO
+    # PASSO 5: INSERIR A TERCEIRA IMAGEM EM POSIÇÃO FIXA
     # ================================================================
-    if '<h2>' in conteudo_reescrito:
-        partes = conteudo_reescrito.split('<h2>', 2)
-        if len(partes) >= 3:
-            conteudo_reescrito = partes[0] + '<h2>' + partes[1] + '</h2>\n' + img3_html + '\n' + '<h2>' + partes[2]
-        else:
-            partes = conteudo_reescrito.split('</h2>', 1)
-            if len(partes) == 2:
-                conteudo_reescrito = partes[0] + '</h2>\n' + img3_html + '\n' + partes[1]
-            else:
-                conteudo_reescrito = img3_html + '\n' + conteudo_reescrito
+    # Insere a img3 após o segundo parágrafo (ou após o primeiro se não houver muitos)
+    paragrafos = re.findall(r'<p>(.*?)</p>', conteudo_reescrito, re.DOTALL)
+    if len(paragrafos) >= 2:
+        # Reconstrói o texto inserindo a img3 após o segundo parágrafo
+        novo_texto = ''
+        for i, p in enumerate(paragrafos):
+            novo_texto += f'<p>{p}</p>\n'
+            if i == 1:  # após o segundo parágrafo
+                novo_texto += img3_html + '\n'
+        conteudo_reescrito = novo_texto
     else:
+        # Se tiver menos de 2 parágrafos, insere no início
         conteudo_reescrito = img3_html + '\n' + conteudo_reescrito
 
     # ================================================================
@@ -458,7 +484,7 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     conteudo_reescrito = inserir_links_repetidos(conteudo_reescrito, densidade=0.6)
 
     # ================================================================
-    # PASSO 7: CORREÇÃO DE SUBTÍTULOS
+    # PASSO 7: CORREÇÃO DE SUBTÍTULOS MAL FORMATADOS
     # ================================================================
     conteudo_reescrito = re.sub(r'<p>\s*<h2>', '<h2>', conteudo_reescrito)
     conteudo_reescrito = re.sub(r'</h2>\s*</p>', '</h2>', conteudo_reescrito)
