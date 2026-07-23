@@ -24,77 +24,26 @@ for nome, valor in [
     if not valor:
         raise ValueError(f"Faltou configurar a variável/segredo: {nome}")
 
-# Cliente oficial Groq
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 # --- FONTES RSS ---
 FONTES = {
-    # Portais de Notícias Gerais
     "G1": "https://g1.globo.com/rss/g1/",
     "G1 Tecnologia": "https://g1.globo.com/rss/g1/tecnologia/",
     "UOL Notícias": "https://rss.uol.com.br/feed/noticias.xml",
     "Terra Notícias": "https://terra.com.br/rss/noticias/",
     "R7 Notícias": "https://noticias.r7.com/feed/",
     "Band Notícias": "https://band.com.br/rss/noticias/",
-    "Record Notícias": "https://noticias.r7.com/record/feed/",
-    "SBT News": "https://sbtnews.sbt.com.br/feed/",
-    "Jovem Pan Notícias": "https://jovempan.com.br/feed/",
     "BBC Brasil": "https://www.bbc.com/portuguese/index.xml",
-
-    # Jornais e Revistas
     "Folha de S.Paulo": "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml",
-    "O Estado de S.Paulo (Estadão)": "https://www.estadao.com.br/rss/",
     "O Globo": "https://oglobo.globo.com/rss/",
-    "Extra": "https://extra.globo.com/rss/",
-    "Zero Hora": "https://zerohora.clicrbs.com.br/rss/",
-    "Correio Braziliense": "https://www.correiobraziliense.com.br/rss/",
-    "Gazeta do Povo": "https://www.gazetadopovo.com.br/feed/",
     "Veja": "https://veja.abril.com.br/feed/",
-    "Época": "https://epoca.globo.com/rss/",
-    "IstoÉ": "https://istoe.com.br/feed/",
-
-    # Esportes
     "Globo Esporte": "https://ge.globo.com/rss/",
-    "UOL Esporte": "https://rss.uol.com.br/feed/esporte.xml",
-    "ESPN Brasil": "https://www.espn.com.br/rss/",
-    "Lance!": "https://www.lance.com.br/rss/",
-    "Gazeta Esportiva": "https://www.gazetaesportiva.com/feed/",
-    "Trivela": "https://trivela.com.br/feed/",
-    "OneFootball (BR)": "https://onefootball.com/feed/br/",
-    "TNT Sports BR": "https://tntsports.com.br/feed/",
-
-    # Entretenimento, Cultura Pop e Geek
     "Omelete": "https://www.omelete.com.br/sitemap-news.xml",
-    "Jovem Nerd": "https://jovemnerd.com.br/feed-completo",
-    "Critical Hits": "https://criticalhits.com.br/feed/",
-    "Legião dos Heróis": "https://legiaodosherois.com.br/feed/",
-    "IGN Brasil": "https://br.ign.com/feed/",
     "TecMundo": "https://tecmundo.com.br/feed/",
     "Canaltech": "https://canaltech.com.br/feed/",
-    "AdoroCinema": "https://www.adorocinema.com.br/rss/",
-    "Combo Infinito": "https://comboinfinito.com.br/feed/",
-    "The Enemy": "https://theenemy.com.br/feed/",
-    "Garotas Geeks": "https://garotasgeeks.com/feed/",
-
-    # Fofocas e Celebridades
     "Quem Acontece": "https://quem.globo.com/rss/",
-    "Contigo!": "https://contigo.com.br/feed/",
-    "Caras": "https://caras.com.br/feed/",
-    "OFuxico": "https://ofuxico.com.br/feed/",
-    "Purepeople BR": "https://www.purepeople.com.br/rss.xml",
-
-    # Internacional
     "BBC News (Mundo)": "http://feeds.bbci.co.uk/news/world/rss.xml",
-    "CNN Internacional": "http://rss.cnn.com/rss/edition.rss",
-    "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
-    "El País Brasil": "https://elpais.com/arc/outboundfeeds/rss/tags_slug/brasil-a/?outputType=xml",
-    "France 24 Português": "https://www.france24.com/pt/rss",
-
-    # Clima
-    "Climatempo": "https://www.climatempo.com.br/rss/",
-    "Metsul Meteorologia": "https://metsul.com/feed/",
-    "INMET Notícias": "https://portal.inmet.gov.br/noticias/rss",
-    "Tempo.com Meteored": "https://www.tempo.com/rss/",
 }
 
 ARQUIVO_HISTORICO = "historico_postados.txt"
@@ -119,13 +68,11 @@ def pegar_noticia_multiplas_fontes():
         try:
             feed = feedparser.parse(url_rss, agent="Mozilla/5.0")
         except Exception as e:
-            print(f"⚠️ Erro ao parsear {nome_fonte}: {e}")
             continue
 
         for entrada in feed.entries[:5]:
             tentativas += 1
             if tentativas > max_tentativas:
-                print("⚠️ Limite de tentativas atingido. Saindo.")
                 return None, None, None, None
 
             link = entrada.get("link")
@@ -139,17 +86,14 @@ def pegar_noticia_multiplas_fontes():
                 print(f"✅ Notícia inédita encontrada em {nome_fonte}: {titulo[:60]}...")
                 return titulo, resumo, link, nome_fonte
 
-    print("⚠️ Nenhuma notícia nova encontrada em nenhuma fonte.")
     return None, None, None, None
 
-def gerar_imagem_gratis(termo_busca):
-    termo_limpo = termo_busca.lower().replace(" ", ",").replace(":", "")
-    if not termo_limpo:
-        termo_limpo = "news"
-    return f"https://source.unsplash.com/800x400/?{termo_limpo}"
+def gerar_imagem_gratis():
+    # Gerador Picsum com seed aleatório (100% funcional)
+    seed = random.randint(1, 1000)
+    return f"https://picsum.photos/seed/{seed}/800/400"
 
 def pedir_ia_groq(prompt):
-    """Função auxiliar para chamar o Llama 3 via Groq"""
     response = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
         model="llama-3.1-8b-instant",
@@ -158,54 +102,35 @@ def pedir_ia_groq(prompt):
     return response.choices[0].message.content.strip()
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
-    """Gera conteúdo único usando Groq (Llama 3.1)"""
     prompt_texto = f"""
-    Você é um jornalista e redator profissional de um blog de notícias em português do Brasil.
-    Reescreva a notícia a seguir, no idioma português, mesmo que o conteúdo original esteja em outro idioma.
+    Você é um jornalista de um portal popular no Brasil. 
+    Escreva um artigo de notícia completo e descontraído em Português do Brasil com base no tema abaixo.
 
-    REGRAS OBRIGATÓRIAS:
-    1. Não copie frases do texto original (mude a estrutura completamente para evitar plágio). Persona estilo conversacional, informativo e descontraído.
-    2. Escreva um texto longo, aprofundado, fluido e bem explicado, em português (mínimo 1500 palavras).
-    3. Use apenas tags HTML simples (<p>, <h2>, <strong>, <ul>, <li>).
-    4. Não use blocos de código markdown (```html). Retorne apenas o texto com as tags.
-    5. Título matador SEO, para aparecer nas primeiras páginas do Google.
-    6. Estrutura com subtítulos matadores, chamada para ação no final (compartilhar, comentar etc.).
-    7. Espalhe 4 notas do autor com tom engraçado ou irônico (dependendo do post) ao longo do texto.
-    8. Insira os seguintes links de afiliado (escondidos em palavras de impacto, como "clique aqui", "saiba mais", "veja agora"):
-       - [http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6](http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6)
-       - [http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1](http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1)
-       - [http://s.shopee.com.br/5VQHqQtgyf](http://s.shopee.com.br/5VQHqQtgyf)
-       - [http://www.instagram.com/auracristalencantos](http://www.instagram.com/auracristalencantos)
-       - [http://solucaodigitalshop.blogspot.com](http://solucaodigitalshop.blogspot.com)
-       - [http://cabinepopnews.blogspot.com](http://cabinepopnews.blogspot.com)
-       - [http://s.shopee.com.br/2qTBX58t8P](http://s.shopee.com.br/2qTBX58t8P)
-       - [http://s.shopee.com.br/9zwM4HodQI](http://s.shopee.com.br/9zwM4HodQI)
-    9. Cite a fonte no início ou no final, deixando claro que não disseminamos fakenews (inclua o link real).
-    10. Revise tudo com rigor para não fugir a nenhuma regra.
+    REGRAS DE FORMATO E CONTEÚDO OBRIGATÓRIAS:
+    1. Responda APENAS em HTML puro (use tags <p>, <h2>, <strong>, <ul>, <li>, <a>). NÃO USE MARKDOWN (nunca use **, #, ou lista de links no final).
+    2. Escreva um texto longo, bem explicado e fluido (mínimo 800 palavras).
+    3. Espalhe naturalmente DENTRO dos parágrafos do texto (sem criar uma lista no final) os seguintes links usando a tag HTML <a href="..." target="_blank">:
+       - Para ofertas variadas: <a href="http://s.shopee.com.br/5VQHqQtgyf" target="_blank">confira esta seleção especial</a>
+       - Para novidades do blog: <a href="http://cabinepopnews.blogspot.com" target="_blank">acesse mais notícias exclusivas</a>
+       - Para dicas e loja: <a href="http://solucaodigitalshop.blogspot.com" target="_blank">veja as novidades aqui</a>
+       - Para produtos em destaque: <a href="http://s.shopee.com.br/2qTBX58t8P" target="_blank">garanta descontos agora</a>
+    4. Inclua 3 subtítulos <h2> ao longo do artigo.
+    5. Insira 3 notas bem-humoradas do autor destacadas com <p><em>(Nota do autor: ...)</em></p>.
 
-    Contexto da notícia original (fonte: {nome_fonte}):
+    Notícia Original ({nome_fonte}):
     Título: {titulo}
     Resumo: {resumo}
     """
 
     conteudo_reescrito = pedir_ia_groq(prompt_texto)
 
-    if not conteudo_reescrito or len(conteudo_reescrito) < 200:
-        raise ValueError("Conteúdo gerado pela IA está vazio ou muito curto.")
-
     prompt_titulo = (
-        f"Crie, em português, um título inédito, impactante e jornalístico baseado neste tema: "
-        f"'{titulo}'. Não use as mesmas palavras do original. Retorne APENAS o título e nada mais."
+        f"Crie um título inédito, sem aspas, chamativo e em português para esta notícia: '{titulo}'. "
+        f"Responda APENAS com o título em texto puro, sem tags."
     )
-    novo_titulo = pedir_ia_groq(prompt_titulo).replace("\n", " ").strip()
+    novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
 
-    prompt_tag = (
-        f"Com base no título '{titulo}', dê APENAS UMA palavra em inglês que resuma o assunto "
-        f"(ex: technology, sports, economy, politics, health). Responda APENAS a palavra."
-    )
-    palavra_chave = pedir_ia_groq(prompt_tag).lower().strip()
-
-    img_url = gerar_imagem_gratis(palavra_chave)
+    img_url = gerar_imagem_gratis()
 
     html_final = f"""
     <div style="text-align: center; margin-bottom: 20px;">
@@ -214,7 +139,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     {conteudo_reescrito}
     <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;">
     <p style="font-size: 12px; color: gray; font-style: italic;">
-        Com informações adaptadas do portal <a href="{link_fonte}" target="_blank" rel="noopener">{nome_fonte}</a>.
+        Fonte original: <a href="{link_fonte}" target="_blank" rel="noopener">{nome_fonte}</a>.
     </p>
     """
 
@@ -244,7 +169,6 @@ def publicar_no_blogger(titulo, conteudo):
     resultado = blogger.posts().insert(blogId=BLOGGER_ID, body=corpo_postagem).execute()
     print(f"🔥 Sucesso! Post criado: '{titulo}' -> {resultado.get('url')}")
 
-# --- EXECUÇÃO PRINCIPAL ---
 if __name__ == "__main__":
     print("🚀 Iniciando busca por notícia inédita...")
     titulo, resumo, link, fonte = pegar_noticia_multiplas_fontes()
