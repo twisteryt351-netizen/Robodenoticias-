@@ -261,7 +261,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
     Com dialogo convsersacional, descontraido e divertido! 
     Escreva um artigo COMPLETO e APROFUNDADO e fluido no idioma português brasileiro, com base nas informações reais abaixo.
-    O artigo deve ter NO MÍNIMO 1400+ palavras. Isso é obrigatório — desenvolva bem cada ângulo, não deixe repetir palavras, frases e contexto, não deixa transparecer escrito por i.a, não seja um texto forçado!
+    O artigo deve ter NO MÍNIMO 1200+ palavras. Isso é obrigatório — desenvolva bem cada ângulo, não deixe repetir palavras, frases e contexto, não deixa transparecer escrito por i.a, não seja um texto forçado!
     dê contexto histórico/geográfico quando fizer sentido, explique repercussões possíveis,
     e aprofunde cada ponto em vez de ser breve.
     NÃO repita a mesma frase ou ideia mais de uma vez. Cada parágrafo deve trazer informação nova.
