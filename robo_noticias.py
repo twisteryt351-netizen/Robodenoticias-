@@ -214,13 +214,11 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     return novo_titulo, html_final
 
 def obter_credenciais():
-    token_url = "[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)"
     creds = Credentials(
         token=None,
         refresh_token=REFRESH_TOKEN,
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
-        token_uri=token_url,
     )
     creds.refresh(Request())
     return creds
