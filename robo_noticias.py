@@ -9,7 +9,6 @@ from google.auth.transport.requests import Request
 
 # --- CONFIGURAÇÕES (variáveis de ambiente) ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 BLOGGER_ID = os.environ.get("BLOGGER_ID")
 CLIENT_ID = os.environ.get("BLOGGER_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("BLOGGER_CLIENT_SECRET")
@@ -17,7 +16,6 @@ REFRESH_TOKEN = os.environ.get("BLOGGER_REFRESH_TOKEN")
 
 for nome, valor in [
     ("GROQ_API_KEY", GROQ_API_KEY),
-    ("PIXABAY_API_KEY", PIXABAY_API_KEY),
     ("BLOGGER_ID", BLOGGER_ID),
     ("BLOGGER_CLIENT_ID", CLIENT_ID),
     ("BLOGGER_CLIENT_SECRET", CLIENT_SECRET),
@@ -148,35 +146,33 @@ def extrair_palavra_chave(titulo):
     return pedir_ia_groq(prompt_tag, temperatura=0.3).strip().lower().split()[0]
 
 
-IMAGEM_PADRAO = "https://cdn.pixabay.com/photo/2016/11/29/03/53/news-1867010_1280.jpg"
+IMAGEM_PADRAO = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/News_icon.svg/640px-News_icon.svg.png"
 
 
-def buscar_imagens_pixabay(palavra_chave, quantidade=2):
-    """Busca fotos reais e gratuitas no Pixabay relacionadas ao tema da notícia."""
+def buscar_imagens_openverse(palavra_chave, quantidade=2):
+    """Busca fotos reais e gratuitas no Openverse (sem precisar de chave/cadastro)."""
     try:
         resposta = requests.get(
-            "https://pixabay.com/api/",
+            "https://api.openverse.org/v1/images/",
             params={
-                "key": PIXABAY_API_KEY,
                 "q": palavra_chave,
-                "image_type": "photo",
-                "orientation": "horizontal",
-                "safesearch": "true",
-                "per_page": max(quantidade, 3),
+                "license_type": "commercial",
+                "page_size": max(quantidade, 3),
+                "mature": "false",
             },
+            headers={"User-Agent": "RoboNoticias/1.0"},
             timeout=10,
         )
         dados = resposta.json()
-        hits = dados.get("hits", [])
-        urls = [item["largeImageURL"] for item in hits[:quantidade]]
+        resultados = dados.get("results", [])
+        urls = [item["url"] for item in resultados if item.get("url")][:quantidade]
         if not urls:
             return [IMAGEM_PADRAO] * quantidade
-        # Se só achou 1 imagem, repete pra preencher
         while len(urls) < quantidade:
             urls.append(urls[0])
         return urls
     except Exception as e:
-        print(f"⚠️ Erro ao buscar imagem no Pixabay: {e}")
+        print(f"⚠️ Erro ao buscar imagem no Openverse: {e}")
         return [IMAGEM_PADRAO] * quantidade
 
 
@@ -199,7 +195,7 @@ def eh_assunto_leve(titulo, resumo):
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     palavra_chave = extrair_palavra_chave(titulo)
-    imagens = buscar_imagens_pixabay(palavra_chave, quantidade=2)
+    imagens = buscar_imagens_openverse(palavra_chave, quantidade=2)
     img_principal, img_secundaria = imagens[0], imagens[1]
 
     prompt_titulo = (
