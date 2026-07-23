@@ -229,93 +229,204 @@ def eh_assunto_leve(titulo, resumo):
     return "LEVE" in resposta
 
 
+import re
+import random
+
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     palavra_chave = extrair_palavra_chave(titulo)
     imagens = buscar_imagens_openverse(palavra_chave, quantidade=2)
     img_principal, img_secundaria = imagens[0], imagens[1]
 
-    # Título novo
+    # Gera título novo
     prompt_titulo = (
         f"Crie um título inédito, sem aspas, chamativo e em português do Brasil para esta notícia: '{titulo}'. "
         f"Responda APENAS com o título em texto puro, sem tags HTML."
     )
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
 
-    # Gera as duas imagens HTML
     img1_html = gerar_tabela_imagem_blogger(img_principal, novo_titulo, novo_titulo)
     img2_html = gerar_tabela_imagem_blogger(img_secundaria, novo_titulo, "Entenda os detalhes")
 
-    # Decide se o assunto é leve ou sério
     assunto_leve = eh_assunto_leve(titulo, resumo)
 
     if assunto_leve:
         instrucao_humor = (
-            "5. Depois de um dos subtítulos, insira UMA (só uma) nota do autor leve e "
-            "engraçada dentro de uma tag <blockquote>, como um comentário pessoal e "
-            "descontraído do redator. Não exagere, e não repita a piada em outro lugar."
+            "5. OBRIGATÓRIO: depois de UM dos subtítulos, insira UMA nota do autor engraçada "
+            "dentro de <blockquote>. A piada deve ser natural e relacionada ao tema, como um "
+            "comentário de bar. Exemplo: 'Sabe aquela sensação de quando você desiste de comprar "
+            "algo caro? O Al-Hilal sentiu isso com Raphinha!'. NÃO repita a piada em outro lugar."
         )
     else:
         instrucao_humor = (
-            "5. Este é um assunto sério. NÃO inclua nenhuma piada, brincadeira ou comentário "
-            "descontraído. Mantenha um tom respeitoso, factual e sóbrio do início ao fim."
+            "5. Este é um assunto sério. NUNCA inclua piadas, brincadeiras ou tom descontraído. "
+            "Mantenha respeito e sobriedade do início ao fim."
         )
 
-    # MONTA O PROMPT COMPLETO (com a correção de chave única)
+    # ================================================================
+    # PROMPT REFORÇADO COM EXIGÊNCIAS CLARAS
+    # ================================================================
     prompt_texto = f"""\
-Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
-Com diálogo conversacional, descontraído e divertido!
-Escreva um artigo COMPLETO e APROFUNDADO e fluido no idioma português brasileiro, com base nas informações reais abaixo.
-O artigo deve ter NO MÍNIMO 1200+ palavras. Isso é obrigatório — desenvolva bem cada ângulo, não deixe repetir palavras, frases e contexto, não deixe transparecer que foi escrito por I.A., não seja um texto forçado!
-Dê contexto histórico/geográfico quando fizer sentido, explique repercussões possíveis,
-e aprofunde cada ponto em vez de ser breve.
-NÃO repita a mesma frase ou ideia mais de uma vez. Cada parágrafo deve trazer informação nova.
+Você é um jornalista de um portal popular do Brasil. Escreva um artigo COMPLETO, APROFUNDADO e com tom CONVERSACIONAL E DESCONTRAÍDO (como se estivesse contando uma história para um amigo).
 
-REGRAS DE FORMATO (HTML PURO):
-1. Retorne APENAS HTML puro. NUNCA use Markdown (sem **, sem #, sem ```html).
-2. Envolva todos os parágrafos em tags <p>.
-3. Crie NO MÍNIMO 4 subtítulos usando a tag <h2>, cada um abrindo uma nova frente de
-   análise (contexto, detalhes técnicos, reações, repercussão, o que vem a seguir, etc).
-4. Logo após o primeiro <h2>, insira exatamente este trecho: {img2_html}
-   {instrucao_humor}
-5. Este é um assunto que será abordado com um tom leve, bem-humorado e
-   descontraído, exatamente como uma conversa de bar entre amigos. Use
-   analogias criativas, gírias brasileiras quando couber, e um toque de
-   ironia e diversão, mas sem perder a credibilidade e a informação de
-   qualidade. O leitor deve sentir que está trocando ideia com um jornalista
-   que entende do assunto e sabe contar uma boa história com graça.
-   Nada de soar sério, técnico ou engessado — a ideia é prender a atenção
-   do início ao fim com um texto gostoso de ler e cheio de personalidade.
-6. Insira links de afiliados dentro do corpo do texto. O texto deve ser 100%
-   informativo, com links de afiliado. Mínimo de 5 links e máximo de 8, disfarçados
-   em palavras de impacto no post.
-7. NÃO invente fatos, números ou declarações que não estejam no resumo fornecido — mas
-   PODE contextualizar com conhecimento histórico/geral real e relevante ao tema. Citando as fontes.
-8. Escreva NO MÍNIMO 8 parágrafos substanciais (bem distribuídos entre os subtítulos),
-   cada um trazendo um ângulo diferente da notícia — nunca reafirmando o que já foi dito.
-9. Lista de links separados por vírgula que deverão estar em 5 a 8 palavras por parágrafo
-   (OBRIGATÓRIO) DISFARÇADOS em palavras de impacto randomicamente. Este ponto não precisa
-   oferecer, não é venda, é apenas links disfarçados dentro das palavras:
-   http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6,
-   http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1,
-   http://s.shopee.com.br/5VQHqQtgyf,
-   http://www.instagram.com/auracristalencantos,
-   http://solucaodigitalshop.blogspot.com,
-   http://cabinepopnews.blogspot.com,
-   http://s.shopee.com.br/2qTBX58t8P,
-   http://s.shopee.com.br/9zwM4HodQI
-10. OBRIGATÓRIO: texto antes de ser publicado deve ser revisado com cuidado para NÃO TER
-    FRASES REPETIDAS. Artigo completo, muito bem escrito e agradável! Cuidado com repetições
-    e looping de texto e contexto; se for preciso, busque mais de uma fonte para preencher o post.
+A notícia é esta:
+- Título original: {titulo}
+- Resumo: {resumo}
+- Fonte: {nome_fonte}
 
-Notícia original capturada (fonte: {nome_fonte}):
-  - Título: {titulo}
-  - Resumo: {resumo}
+REGRAS OBRIGATÓRIAS (NUNCA DESOBEDEÇA):
+
+1. O artigo deve ter NO MÍNIMO 1200 palavras. 
+2. NUNCA repita a mesma informação em parágrafos diferentes. Se você já falou sobre um assunto, vá para outro ângulo.
+3. Crie NO MÍNIMO 4 subtítulos com <h2>. Cada subtítulo deve abrir uma nova frente de análise:
+   - Exemplo 1: contexto histórico do clube/jogador
+   - Exemplo 2: detalhes da negociação (valores, concorrentes)
+   - Exemplo 3: reações da torcida e da imprensa
+   - Exemplo 4: comparação com outras transferências similares
+   - Exemplo 5: o que vem a seguir para o jogador e para o clube
+4. Logo após o PRIMEIRO <h2>, insira EXATAMENTE este código: {img2_html}
+5. {instrucao_humor}
+6. Use uma linguagem natural, com gírias e expressões brasileiras (ex: "bora lá", "segura essa", "pode crer", "é isso aí"). Nada de frases prontas como "é importante lembrar", "é fundamental", "para entender melhor". Seja criativo e autêntico.
+7. NÃO invente fatos. Use apenas as informações do resumo, mas pode adicionar contexto histórico/geográfico real que seja relevante.
+8. Escreva NO MÍNIMO 8 parágrafos substanciais (cada um com pelo menos 3 frases).
+9. Use sinônimos para variar: time/clube/equipe/agremiação, contratação/chegada/negócio/acerto, jogador/atleta/craque.
+10. Se o assunto for esporte, cite exemplos de outros clubes ou jogadores para enriquecer a análise.
+11. Revise o texto para garantir que NENHUMA frase se repete. Se dois parágrafos começam com a mesma ideia, reescreva um deles.
+
+Agora escreva o artigo completo em HTML puro, com <p> para parágrafos e <h2> para subtítulos. Comece direto, sem introdução genérica.
 """
 
-    # Gera o conteúdo reescrito
-    conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.6)
+    conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.75)
 
-    # Caixas de compartilhamento e publicidade
+    # ================================================================
+    # PÓS-PROCESSAMENTO: REMOVE REPETIÇÕES E FORÇA LINKS
+    # ================================================================
+
+    # Lista de links afiliados
+    LINKS_AFILIADOS = [
+        "http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6",
+        "http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1",
+        "http://s.shopee.com.br/5VQHqQtgyf",
+        "http://www.instagram.com/auracristalencantos",
+        "http://solucaodigitalshop.blogspot.com",
+        "http://cabinepopnews.blogspot.com",
+        "http://s.shopee.com.br/2qTBX58t8P",
+        "http://s.shopee.com.br/9zwM4HodQI"
+    ]
+
+    # Textos âncora variados para os links (para não repetir)
+    ANCHORS = [
+        "dá uma olhada aqui",
+        "se você curte esse tipo de conteúdo",
+        "enquanto isso, no mundo dos negócios",
+        "se quiser saber mais sobre o assunto",
+        "enquanto você acompanha essa notícia",
+        "se você está por dentro do futebol",
+        "pra quem gosta de análises aprofundadas",
+        "se você quer entender melhor o mercado",
+        "enquanto isso, nos bastidores",
+        "se você é fã de esportes",
+        "pra quem não perde uma notícia",
+        "se você quer ficar por dentro",
+        "enquanto a bola rola",
+        "se você curte futebol e negócios",
+        "pra quem acompanha o mercado da bola"
+    ]
+
+    def inserir_links_forcados(texto):
+        """Insere links em parágrafos que não têm nenhum link."""
+        paragrafos = texto.split('</p>')
+        novos = []
+        links_usados = 0
+        max_links = 8
+        min_links = 5
+
+        for i, p in enumerate(paragrafos):
+            if not p.strip():
+                continue
+
+            # Verifica se o parágrafo já tem algum link
+            tem_link = 'href="' in p or 'http://' in p or 'https://' in p
+
+            # Se NÃO tem link E ainda não atingimos o máximo de links
+            if not tem_link and links_usados < max_links:
+                # Escolhe um link aleatório e um âncora aleatório
+                link = random.choice(LINKS_AFILIADOS)
+                anchor = random.choice(ANCHORS)
+
+                # Remove tags <p> para inserir o link no meio do texto
+                conteudo = p.replace('<p>', '').strip()
+
+                # Insere o link em uma posição aleatória (depois do 3º espaço)
+                palavras = conteudo.split()
+                if len(palavras) > 5:
+                    pos = min(random.randint(3, len(palavras)-2), len(palavras)-2)
+                    palavras.insert(pos, f'<a href="{link}" target="_blank">{anchor}</a>')
+                    novo_conteudo = ' '.join(palavras)
+                else:
+                    # Se o parágrafo for curto, insere no final
+                    novo_conteudo = f'{conteudo} <a href="{link}" target="_blank">{anchor}</a>'
+
+                novo_p = f'<p>{novo_conteudo}</p>'
+                novos.append(novo_p)
+                links_usados += 1
+            else:
+                # Mantém o parágrafo original
+                if p.startswith('<p>') or p.startswith('<h'):
+                    novos.append(p)
+                else:
+                    novos.append(f'<p>{p}</p>')
+
+        # Se não conseguiu inserir pelo menos 5 links, força nos primeiros parágrafos
+        if links_usados < min_links:
+            for i in range(min_links - links_usados):
+                if i < len(novos):
+                    p = novos[i]
+                    if '<a href=' not in p:
+                        link = random.choice(LINKS_AFILIADOS)
+                        anchor = random.choice(ANCHORS)
+                        # Insere no final do parágrafo
+                        novo_p = p.replace('</p>', f' <a href="{link}" target="_blank">{anchor}</a></p>')
+                        novos[i] = novo_p
+                        links_usados += 1
+
+        return '</p>'.join(novos) + '</p>' if novos else texto
+
+    # Aplica a inserção forçada de links
+    conteudo_reescrito = inserir_links_forcados(conteudo_reescrito)
+
+    # Remove parágrafos muito repetitivos (similaridade > 70%)
+    def remover_repetidos(texto):
+        paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
+        vistos = []
+        resultado = []
+        for p in paragrafos:
+            p_limpo = re.sub(r'<[^>]+>', '', p).strip().lower()
+            if len(p_limpo) < 30:
+                resultado.append(f'<p>{p}</p>')
+                continue
+            repetido = False
+            for visto in vistos:
+                # Calcula similaridade simples (palavras em comum)
+                palavras_p = set(p_limpo.split())
+                palavras_v = set(visto.split())
+                if len(palavras_p) > 0 and len(palavras_v) > 0:
+                    intersecao = len(palavras_p & palavras_v)
+                    similaridade = intersecao / max(len(palavras_p), len(palavras_v))
+                    if similaridade > 0.65:
+                        repetido = True
+                        print(f"⚠️ Parágrafo repetido removido: {p_limpo[:50]}...")
+                        break
+            if not repetido:
+                resultado.append(f'<p>{p}</p>')
+                vistos.append(p_limpo)
+        return '\n'.join(resultado)
+
+    conteudo_reescrito = remover_repetidos(conteudo_reescrito)
+
+    # ================================================================
+    # MONTAGEM FINAL
+    # ================================================================
+
     caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
 <p style="font-size: 17px; font-weight: bold; color: #333; margin: 0 0 10px 0;">Gostou desta matéria?</p>
 <p style="font-size: 14px; color: #555; margin: 0 0 15px 0;">Deixe seu comentário abaixo e compartilhe com quem também acompanha esse assunto!</p>
@@ -338,7 +449,6 @@ Notícia original capturada (fonte: {nome_fonte}):
         '</div>'
     )
 
-    # Monta o HTML final
     html_final = f"""{img1_html}
 {conteudo_reescrito}
 
