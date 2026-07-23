@@ -237,7 +237,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     imagens = buscar_imagens_openverse(palavra_chave, quantidade=2)
     img_principal, img_secundaria = imagens[0], imagens[1]
 
-    # Gera título novo
+    # Título novo
     prompt_titulo = (
         f"Crie um título inédito, sem aspas, chamativo e em português do Brasil para esta notícia: '{titulo}'. "
         f"Responda APENAS com o título em texto puro, sem tags HTML."
@@ -247,8 +247,8 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     # Gera meta tags SEO
     prompt_seo = f"""
     Baseado no título e resumo abaixo, gere duas tags meta:
-    1. meta description: uma frase curta (máx. 160 caracteres) que resuma a notícia de forma atrativa, incluindo palavras-chave.
-    2. meta keywords: até 10 palavras-chave separadas por vírgula, relevantes para o assunto.
+    1. meta description: uma frase curta (máx. 160 caracteres) que resuma a notícia de forma atrativa.
+    2. meta keywords: até 10 palavras-chave separadas por vírgula.
 
     Título: {titulo}
     Resumo: {resumo}
@@ -281,30 +281,25 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     assunto_leve = eh_assunto_leve(titulo, resumo)
 
     # ================================================================
-    # PROMPT DO ARTIGO
+    # PROMPT DO ARTIGO (mais curto e direto)
     # ================================================================
     if assunto_leve:
-        humor_instrucao = """
-OBRIGATÓRIO: Após o PRIMEIRO subtítulo (<h2>), insira uma NOTA DO AUTOR em formato de piada ou comentário descontraído, dentro de <blockquote>.
-Exemplo: <blockquote>E olha que o Trump já passou por tanta coisa, mas agora a coisa ficou séria! Quem diria que os documentos de Mar-a-Lago iam dar nisso?</blockquote>
-"""
+        humor_instrucao = "Use tom descontraído e gírias como 'bora lá', 'segura essa', 'pode crer'."
     else:
-        humor_instrucao = "NÃO use piadas, brincadeiras ou tom descontraído. Mantenha respeito e sobriedade."
+        humor_instrucao = "Mantenha tom respeitoso e factual. NÃO use piadas."
 
     prompt_texto = f"""Escreva um artigo jornalístico em português do Brasil sobre:
 
-Título original: {titulo}
+Título: {titulo}
 Resumo: {resumo}
 Fonte: {nome_fonte}
 
 INSTRUÇÕES:
-- O artigo deve ter TOM DESCONTRAÍDO E CONVERSACIONAL (se o assunto permitir), usando gírias como "bora lá", "segura essa", "pode crer".
-- NUNCA repita a mesma informação em parágrafos diferentes.
-- Crie pelo menos 4 subtítulos com <h2>, cada um abordando um ângulo diferente (histórico, detalhes, reações, comparações, futuro).
 - {humor_instrucao}
-- Escreva pelo menos 10 parágrafos com conteúdo substancial.
+- NUNCA repita a mesma informação.
+- Crie pelo menos 4 subtítulos com <h2>.
+- Escreva pelo menos 12 parágrafos com conteúdo substancial.
 - NÃO invente fatos. Use apenas o resumo, mas contextualize com conhecimento real.
-- Evite frases prontas como "é importante lembrar".
 
 Comece direto com o artigo em HTML puro, com <p> e <h2>.
 """
@@ -312,7 +307,34 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.8)
 
     # ================================================================
-    # REMOVER REPETIÇÕES DE PARÁGRAFOS
+    # PASSO 1: GARANTIR 1200+ PALAVRAS (esticar se necessário)
+    # ================================================================
+    def contar_palavras_html(texto):
+        # Remove tags HTML e conta palavras
+        texto_limpo = re.sub(r'<[^>]+>', '', texto)
+        return len(texto_limpo.split())
+
+    palavras_atuais = contar_palavras_html(conteudo_reescrito)
+    print(f"📊 Palavras atuais: {palavras_atuais}")
+
+    if palavras_atuais < 1200:
+        # Gera parágrafos extras com a IA
+        prompt_extra = f"""
+        Escreva mais 3 parágrafos adicionando contexto, análises ou repercussões sobre esta notícia.
+        Não repita informações já ditas. Use o mesmo tom do artigo original.
+
+        Título: {titulo}
+        Resumo: {resumo}
+
+        Responda APENAS com o texto em HTML puro, usando <p>.
+        """
+        extra = pedir_ia_groq(prompt_extra, temperatura=0.7)
+        # Insere os parágrafos extras antes da caixa CTA (no final)
+        conteudo_reescrito = conteudo_reescrito + '\n' + extra
+        print(f"📊 Palavras após esticar: {contar_palavras_html(conteudo_reescrito)}")
+
+    # ================================================================
+    # PASSO 2: REMOVER REPETIÇÕES DE PARÁGRAFOS
     # ================================================================
     def remover_repetidos(texto):
         paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
@@ -346,26 +368,30 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
     conteudo_reescrito = remover_repetidos(conteudo_reescrito)
 
     # ================================================================
-    # GARANTIR NOTA DO AUTOR (se for assunto leve e não tiver <blockquote>)
+    # PASSO 3: GARANTIR NOTA DO AUTOR (injeção forçada)
     # ================================================================
     if assunto_leve and '<blockquote>' not in conteudo_reescrito:
         notas = [
-            "<blockquote>E olha que o Trump já passou por tanta coisa, mas agora a coisa ficou séria! Quem diria que os documentos de Mar-a-Lago iam dar nisso?</blockquote>",
-            "<blockquote>Dá pra imaginar a cara do ex-presidente no tribunal. Deve ter sido um misto de 'isso é perseguição' e 'vamos ver no que dá'.</blockquote>",
-            "<blockquote>Os EUA estão fervendo com esse caso. Enquanto isso, a gente aqui torcendo para que a justiça seja feita, né?</blockquote>"
+            "<blockquote>E olha que as enchentes no RS já viraram rotina, mas cada vez que acontece, a gente torce para que seja a última. Quem vive no sul sabe: o medo da água subir é real.</blockquote>",
+            "<blockquote>Dá pra imaginar a tensão de quem olha para o céu e vê mais chuva chegando. O Rio Grande do Sul já provou que é forte, mas a natureza não dá trégua.</blockquote>",
+            "<blockquote>Enquanto isso, a gente aqui torcendo para que os rios baixem logo e a vida volte ao normal. Quem nunca rezou pra água parar de subir, né?</blockquote>",
+            "<blockquote>O gaúcho é guerreiro, mas até o mais forte fica preocupado quando o nível do rio começa a subir. Bora torcer pra essa chuva dar uma trégua!</blockquote>"
         ]
         nota = random.choice(notas)
-        if '<h2>' in conteudo_reescrito:
+        # Insere após o primeiro </h2> ou no início do primeiro parágrafo
+        if '</h2>' in conteudo_reescrito:
             partes = conteudo_reescrito.split('</h2>', 1)
+            conteudo_reescrito = partes[0] + '</h2>\n' + nota + '\n' + partes[1]
+        else:
+            # Insere após o primeiro <p>
+            partes = conteudo_reescrito.split('<p>', 1)
             if len(partes) == 2:
-                conteudo_reescrito = partes[0] + '</h2>\n' + nota + '\n' + partes[1]
+                conteudo_reescrito = partes[0] + '<p>' + nota + '\n' + partes[1]
             else:
                 conteudo_reescrito = nota + '\n' + conteudo_reescrito
-        else:
-            conteudo_reescrito = nota + '\n' + conteudo_reescrito
 
     # ================================================================
-    # INSERIR LINKS DE AFILIADO REPETIDOS À VONTADE
+    # PASSO 4: INSERIR LINKS DE AFILIADO EM MASSA OBRIGATÓRIO
     # ================================================================
     LINKS_AFILIADOS = [
         "http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6",
@@ -391,25 +417,24 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
         "se você quer economizar nas compras", "enquanto você lê essa matéria"
     ]
 
-    def inserir_links_repetidos(texto, densidade=0.3):
-        """
-        Insere links em parágrafos aleatoriamente.
-        densidade = probabilidade de um parágrafo receber um link (0 a 1).
-        Um mesmo link pode aparecer várias vezes.
-        """
+    def inserir_links_repetidos(texto, densidade=0.6):
+        """Insere links em ~60% dos parágrafos, repetindo links à vontade."""
         paragrafos = re.findall(r'<p>(.*?)</p>', texto, re.DOTALL)
         if not paragrafos:
             return texto
 
         novos_paragrafos = []
         for p in paragrafos:
-            # Decide se insere link neste parágrafo
+            # Pula parágrafos muito curtos
+            if len(p) < 50:
+                novos_paragrafos.append(f'<p>{p}</p>')
+                continue
+
             if random.random() < densidade:
                 link = random.choice(LINKS_AFILIADOS)
                 anchor = random.choice(ANCHORS)
-                # Insere o link em posição aleatória dentro do texto
                 palavras = p.split()
-                if len(palavras) > 4:
+                if len(palavras) > 5:
                     pos = random.randint(2, len(palavras)-1)
                     palavras.insert(pos, f'<a href="{link}" target="_blank">{anchor}</a>')
                     novo_p = ' '.join(palavras)
@@ -421,17 +446,16 @@ Comece direto com o artigo em HTML puro, com <p> e <h2>.
 
         return '\n'.join(novos_paragrafos)
 
-    # Aplica com densidade 0.4 (cerca de 40% dos parágrafos ganham link)
-    conteudo_reescrito = inserir_links_repetidos(conteudo_reescrito, densidade=0.4)
+    conteudo_reescrito = inserir_links_repetidos(conteudo_reescrito, densidade=0.6)
 
     # ================================================================
-    # CORREÇÃO: SUBTÍTULOS DENTRO DE <p>
+    # PASSO 5: CORREÇÃO DE SUBTÍTULOS
     # ================================================================
     conteudo_reescrito = re.sub(r'<p>\s*<h2>', '<h2>', conteudo_reescrito)
     conteudo_reescrito = re.sub(r'</h2>\s*</p>', '</h2>', conteudo_reescrito)
 
     # ================================================================
-    # MONTAGEM FINAL (com meta tags no topo)
+    # MONTAGEM FINAL
     # ================================================================
     caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
 <p style="font-size: 17px; font-weight: bold; color: #333; margin: 0 0 10px 0;">Gostou desta matéria?</p>
