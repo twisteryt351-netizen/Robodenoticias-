@@ -333,7 +333,7 @@ caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margi
         '</div>'
     )
       
-    html_final = f"""{img1_html}
+        html_final = f"""{img1_html}
     {conteudo_reescrito}
 
     {caixa_cta}
