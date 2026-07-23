@@ -99,7 +99,11 @@ def pegar_noticia_multiplas_fontes():
     for nome_fonte, url_rss in fontes_lista:
         try:
             feed = feedparser.parse(url_rss, agent="Mozilla/5.0")
-        except Exception:
+            if feed.bozo and not feed.entries:
+                print(f"⚠️ Fonte com problema (sem entradas): {nome_fonte} -> {url_rss}")
+                continue
+        except Exception as e:
+            print(f"⚠️ Fonte falhou ao carregar: {nome_fonte} -> {url_rss} | Erro: {e}")
             continue
 
         for entrada in feed.entries[:5]:
@@ -223,21 +227,25 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
 
     prompt_texto = f"""
     Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
-    Escreva um artigo completo, envolvente e fluido em português, com base nas informações reais abaixo.
+    Escreva um artigo COMPLETO e APROFUNDADO em português, com base nas informações reais abaixo.
+    O artigo deve ter NO MÍNIMO 1400 palavras. Isso é obrigatório — desenvolva bem cada ângulo,
+    dê contexto histórico/geográfico quando fizer sentido, explique repercussões possíveis,
+    e aprofunde cada ponto em vez de ser breve.
     NÃO repita a mesma frase ou ideia mais de uma vez. Cada parágrafo deve trazer informação nova.
 
     REGRAS DE FORMATO (HTML PURO):
     1. Retorne APENAS HTML puro. NUNCA use Markdown (sem **, sem #, sem ```html).
     2. Envolva todos os parágrafos em tags <p>.
-    3. Crie 2 subtítulos usando a tag <h2>.
+    3. Crie NO MÍNIMO 4 subtítulos usando a tag <h2>, cada um abrindo uma nova frente de
+       análise (contexto, detalhes técnicos, reações, repercussão, o que vem a seguir, etc).
     4. Logo após o primeiro <h2>, insira exatamente este trecho: {img2_html}
     {instrucao_humor}
     6. Não insira nenhum link dentro do corpo do texto. Nenhum. O texto deve ser 100%
        informativo, sem links de afiliado, sem "clique aqui", sem chamadas de venda.
-    7. NÃO invente fatos, números ou declarações que não estejam no resumo fornecido.
-    8. Escreva pelo menos 4 parágrafos substanciais, cada um trazendo um ângulo diferente
-       da notícia (contexto, detalhes, repercussão, próximos passos) — nunca reafirmando
-       o que já foi dito.
+    7. NÃO invente fatos, números ou declarações que não estejam no resumo fornecido — mas
+       PODE contextualizar com conhecimento histórico/geral real e relevante ao tema.
+    8. Escreva NO MÍNIMO 8 parágrafos substanciais (bem distribuídos entre os subtítulos),
+       cada um trazendo um ângulo diferente da notícia — nunca reafirmando o que já foi dito.
 
     Notícia original capturada (fonte: {nome_fonte}):
     Título: {titulo}
@@ -245,6 +253,18 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     """
 
     conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.6)
+
+    caixa_cta = """
+    <div style="background-color: #f4f6f8; border-radius: 12px; margin: 30px 0; padding: 25px; text-align: center; font-family: sans-serif;">
+        <p style="font-size: 17px; font-weight: bold; color: #333; margin: 0 0 10px 0;">Gostou desta matéria?</p>
+        <p style="font-size: 14px; color: #555; margin: 0 0 15px 0;">Deixe seu comentário abaixo e compartilhe com quem também acompanha esse assunto!</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+            <a href="#" onclick="window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(document.title + ' - ' + window.location.href), '_blank'); return false;" style="background-color: #25d366; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">🟢 WhatsApp</a>
+            <a href="#" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href), '_blank'); return false;" style="background-color: #1877f2; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">🔵 Facebook</a>
+            <a href="#" onclick="window.open('https://twitter.com/intent/tweet?url=' + encodeURIComponent(window.location.href), '_blank'); return false;" style="background-color: #000; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold;">⚫ X</a>
+        </div>
+    </div>
+    """
 
     # Caixa de publicidade ÚNICA, no final, claramente identificada como anúncio.
     # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
@@ -263,6 +283,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
 
     html_final = f"""{img1_html}
 {conteudo_reescrito}
+{caixa_cta}
 {caixa_publicidade}
 <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
 <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
