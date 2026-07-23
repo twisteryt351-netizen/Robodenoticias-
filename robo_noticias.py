@@ -336,6 +336,9 @@ caixa_publicidade = (
 img1_html = img1_html if 'img1_html' in globals() else ""
 conteudo_reescrito = conteudo_reescrito if 'conteudo_reescrito' in globals() else ""
 
+link_fonte = link_fonte if 'link_fonte' in globals() else "#"
+nome_fonte = nome_fonte if 'nome_fonte' in globals() else "Fonte Original"
+
 html_final = f"""{img1_html}
 {conteudo_reescrito}
 
