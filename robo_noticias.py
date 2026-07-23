@@ -311,8 +311,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
         'economizar de verdade nas suas compras online diariamente?</p>'
         '</div>'
     )
-                    """
-
+      
     html_final = f"""{img1_html}
 {conteudo_reescrito}
 {caixa_cta}
