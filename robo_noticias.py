@@ -354,7 +354,7 @@ def obter_credenciais():
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         token_uri="https://oauth2.googleapis.com/token",
-    )
+        )
 
 
 def publicar_no_blogger(titulo, conteudo):
