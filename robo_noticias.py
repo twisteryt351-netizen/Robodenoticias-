@@ -311,12 +311,6 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
         'economizar de verdade nas suas compras online diariamente?</p>'
         '</div>'
     )
-        <div style="background-color: #fff8e1; border: 1px solid #f0d68a; border-radius: 10px; margin: 30px 0; padding: 20px; font-family: sans-serif;">
-            <p style="font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Publicidade</p>
-            <p style="font-size: 15px; color: #333; margin: 0 0 12px 0;">Aproveite ofertas selecionadas enquanto navega pelo blog:</p>
-            <a href="{LINK_AFILIADO}" target="_blank" rel="nofollow sponsored"
-               style="background-color: #ff007f; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
-               Ver ofertas
             </a>
         </div>
         """
