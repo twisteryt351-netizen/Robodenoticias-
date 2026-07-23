@@ -1,5 +1,6 @@
 import os
 import random
+import requests
 import feedparser
 from groq import Groq
 from googleapiclient.discovery import build
@@ -8,6 +9,7 @@ from google.auth.transport.requests import Request
 
 # --- CONFIGURAÇÕES (variáveis de ambiente) ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
 BLOGGER_ID = os.environ.get("BLOGGER_ID")
 CLIENT_ID = os.environ.get("BLOGGER_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("BLOGGER_CLIENT_SECRET")
@@ -15,6 +17,7 @@ REFRESH_TOKEN = os.environ.get("BLOGGER_REFRESH_TOKEN")
 
 for nome, valor in [
     ("GROQ_API_KEY", GROQ_API_KEY),
+    ("PIXABAY_API_KEY", PIXABAY_API_KEY),
     ("BLOGGER_ID", BLOGGER_ID),
     ("BLOGGER_CLIENT_ID", CLIENT_ID),
     ("BLOGGER_CLIENT_SECRET", CLIENT_SECRET),
@@ -24,6 +27,9 @@ for nome, valor in [
         raise ValueError(f"Faltou configurar a variável/segredo: {nome}")
 
 groq_client = Groq(api_key=GROQ_API_KEY)
+
+# Modelo mais capaz do Groq (ainda gratuito), evita repetição e texto raso
+MODELO_IA = "llama-3.3-70b-versatile"
 
 # --- SEU LINK DE AFILIADO (opcional) ---
 # Coloque aqui SEU link de afiliado real e legítimo (ex: Shopee, Amazon Associates, etc).
@@ -120,7 +126,7 @@ def pegar_noticia_multiplas_fontes():
 def pedir_ia_groq(prompt, temperatura=0.7):
     response = groq_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama-3.1-8b-instant",
+        model=MODELO_IA,
         temperature=temperatura,
     )
     return response.choices[0].message.content.strip()
@@ -142,16 +148,59 @@ def extrair_palavra_chave(titulo):
     return pedir_ia_groq(prompt_tag, temperatura=0.3).strip().lower().split()[0]
 
 
-def gerar_imagem_relevante(palavra_chave):
-    """Busca uma imagem gratuita relacionada ao TEMA REAL da notícia (não aleatória)."""
-    termo_limpo = palavra_chave.replace(" ", ",")
-    return f"https://source.unsplash.com/1600x900/?{termo_limpo}"
+IMAGEM_PADRAO = "https://cdn.pixabay.com/photo/2016/11/29/03/53/news-1867010_1280.jpg"
+
+
+def buscar_imagens_pixabay(palavra_chave, quantidade=2):
+    """Busca fotos reais e gratuitas no Pixabay relacionadas ao tema da notícia."""
+    try:
+        resposta = requests.get(
+            "https://pixabay.com/api/",
+            params={
+                "key": PIXABAY_API_KEY,
+                "q": palavra_chave,
+                "image_type": "photo",
+                "orientation": "horizontal",
+                "safesearch": "true",
+                "per_page": max(quantidade, 3),
+            },
+            timeout=10,
+        )
+        dados = resposta.json()
+        hits = dados.get("hits", [])
+        urls = [item["largeImageURL"] for item in hits[:quantidade]]
+        if not urls:
+            return [IMAGEM_PADRAO] * quantidade
+        # Se só achou 1 imagem, repete pra preencher
+        while len(urls) < quantidade:
+            urls.append(urls[0])
+        return urls
+    except Exception as e:
+        print(f"⚠️ Erro ao buscar imagem no Pixabay: {e}")
+        return [IMAGEM_PADRAO] * quantidade
+
+
+def eh_assunto_leve(titulo, resumo):
+    """Pergunta pra IA se o tema permite humor, ou se é sério demais pra brincadeira."""
+    prompt = f"""
+    Analise este título e resumo de notícia:
+    Título: {titulo}
+    Resumo: {resumo}
+
+    Este assunto é LEVE (entretenimento, esportes, celebridades, curiosidades, tecnologia,
+    cultura pop) ou é SÉRIO (morte, guerra, conflito armado, ataque, tragédia, acidente,
+    doença grave, crise humanitária, desastre, crime violento, luto)?
+
+    Responda com APENAS uma palavra: LEVE ou SERIO.
+    """
+    resposta = pedir_ia_groq(prompt, temperatura=0.1).strip().upper()
+    return "LEVE" in resposta
 
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     palavra_chave = extrair_palavra_chave(titulo)
-    img_principal = gerar_imagem_relevante(palavra_chave)
-    img_secundaria = gerar_imagem_relevante(palavra_chave)
+    imagens = buscar_imagens_pixabay(palavra_chave, quantidade=2)
+    img_principal, img_secundaria = imagens[0], imagens[1]
 
     prompt_titulo = (
         f"Crie um título inédito, sem aspas, chamativo e em português do Brasil para esta notícia: '{titulo}'. "
@@ -162,29 +211,44 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     img1_html = gerar_tabela_imagem_blogger(img_principal, novo_titulo, novo_titulo)
     img2_html = gerar_tabela_imagem_blogger(img_secundaria, novo_titulo, "Entenda os detalhes")
 
+    assunto_leve = eh_assunto_leve(titulo, resumo)
+
+    if assunto_leve:
+        instrucao_humor = (
+            "5. Depois de um dos subtítulos, insira UMA (só uma) nota do autor leve e "
+            "engraçada dentro de uma tag <blockquote>, como um comentário pessoal e "
+            "descontraído do redator. Não exagere, e não repita a piada em outro lugar."
+        )
+    else:
+        instrucao_humor = (
+            "5. Este é um assunto sério. NÃO inclua nenhuma piada, brincadeira ou comentário "
+            "descontraído. Mantenha um tom respeitoso, factual e sóbrio do início ao fim."
+        )
+
     prompt_texto = f"""
     Você é um jornalista e redator profissional de um portal de notícias popular no Brasil.
     Escreva um artigo completo, envolvente e fluido em português, com base nas informações reais abaixo.
+    NÃO repita a mesma frase ou ideia mais de uma vez. Cada parágrafo deve trazer informação nova.
 
     REGRAS DE FORMATO (HTML PURO):
     1. Retorne APENAS HTML puro. NUNCA use Markdown (sem **, sem #, sem ```html).
     2. Envolva todos os parágrafos em tags <p>.
     3. Crie 2 subtítulos usando a tag <h2>.
     4. Logo após o primeiro <h2>, insira exatamente este trecho: {img2_html}
-    5. Depois de cada subtítulo ou a cada 2-3 parágrafos, insira UMA nota do autor engraçada e
-       leve dentro de uma tag <blockquote>, comentando a notícia com humor, como se fosse uma
-       observação pessoal e descontraída do redator (mantendo respeito ao tema, sem piadas
-       ofensivas). Não exagere: no máximo 2 notas do autor no artigo inteiro.
+    {instrucao_humor}
     6. Não insira nenhum link dentro do corpo do texto. Nenhum. O texto deve ser 100%
        informativo, sem links de afiliado, sem "clique aqui", sem chamadas de venda.
     7. NÃO invente fatos, números ou declarações que não estejam no resumo fornecido.
+    8. Escreva pelo menos 4 parágrafos substanciais, cada um trazendo um ângulo diferente
+       da notícia (contexto, detalhes, repercussão, próximos passos) — nunca reafirmando
+       o que já foi dito.
 
     Notícia original capturada (fonte: {nome_fonte}):
     Título: {titulo}
     Resumo: {resumo}
     """
 
-    conteudo_reescrito = pedir_ia_groq(prompt_texto)
+    conteudo_reescrito = pedir_ia_groq(prompt_texto, temperatura=0.6)
 
     # Caixa de publicidade ÚNICA, no final, claramente identificada como anúncio.
     # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
