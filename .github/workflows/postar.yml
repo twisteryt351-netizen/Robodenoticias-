@@ -22,7 +22,8 @@ jobs:
 
       - name: Rodar o robô
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        env:
+         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           BLOGGER_ID: ${{ secrets.BLOGGER_ID }}
           BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
           BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
