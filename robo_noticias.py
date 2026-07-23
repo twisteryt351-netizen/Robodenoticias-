@@ -41,39 +41,74 @@ FONTES = {
     "G1": "https://g1.globo.com/rss/g1/",
     "G1 Tecnologia": "https://g1.globo.com/rss/g1/tecnologia/",
     "UOL Notícias": "https://rss.uol.com.br/feed/noticias.xml",
+    "Terra Notícias": "https://terra.com.br/rss/noticias/",
     "R7 Notícias": "https://noticias.r7.com/feed/",
+    "Band Notícias": "https://band.com.br/rss/noticias/",
+    "Record Notícias": "https://noticias.r7.com/record/feed/",
+    "SBT News": "https://sbtnews.sbt.com.br/feed/",
+    "Jovem Pan Notícias": "https://jovempan.com.br/feed/",
     "BBC Brasil": "https://www.bbc.com/portuguese/index.xml",
 
     # Jornais e Revistas
     "Folha de S.Paulo": "https://feeds.folha.uol.com.br/emcimadahora/rss091.xml",
     "O Estado de S.Paulo (Estadão)": "https://www.estadao.com.br/rss/",
+    "O Globo": "https://oglobo.globo.com/rss/",
+    "Extra": "https://extra.globo.com/rss/",
+    "Zero Hora": "https://zerohora.clicrbs.com.br/rss/",
+    "Correio Braziliense": "https://www.correiobraziliense.com.br/rss/",
+    "Gazeta do Povo": "https://www.gazetadopovo.com.br/feed/",
     "Veja": "https://veja.abril.com.br/feed/",
+    "Época": "https://epoca.globo.com/rss/",
+    "IstoÉ": "https://istoe.com.br/feed/",
 
     # Esportes
     "Globo Esporte": "https://ge.globo.com/rss/",
     "UOL Esporte": "https://rss.uol.com.br/feed/esporte.xml",
     "ESPN Brasil": "https://www.espn.com.br/rss/",
     "Lance!": "https://www.lance.com.br/rss/",
-
-    # Luta Livre / WWE
-    "WWE Oficial (Notícias)": "https://www.wwe.com/feeds/rss/news",
-    "Wrestling Fight Club": "https://wrestlingfightclub.com.br/feed/",
-    "Universo Wrestling": "https://universowrestling.com.br/feed/",
+    "Gazeta Esportiva": "https://www.gazetaesportiva.com/feed/",
+    "Trivela": "https://trivela.com.br/feed/",
+    "OneFootball (BR)": "https://onefootball.com/feed/br/",
+    "TNT Sports BR": "https://tntsports.com.br/feed/",
 
     # Entretenimento, Cultura Pop e Geek
     "Omelete": "https://www.omelete.com.br/sitemap-news.xml",
     "Jovem Nerd": "https://jovemnerd.com.br/feed-completo",
+    "Critical Hits": "https://criticalhits.com.br/feed/",
+    "Legião dos Heróis": "https://legiaodosherois.com.br/feed/",
+    "IGN Brasil": "https://br.ign.com/feed/",  # CORRIGIDO
     "TecMundo": "https://tecmundo.com.br/feed/",
     "Canaltech": "https://canaltech.com.br/feed/",
+    "AdoroCinema": "https://www.adorocinema.com.br/rss/",
+    "Combo Infinito": "https://comboinfinito.com.br/feed/",
+    "The Enemy": "https://theenemy.com.br/feed/",
+    "Garotas Geeks": "https://garotasgeeks.com/feed/",
+    # Luta Livre / WWE
+    "WWE Oficial (Notícias)": "https://www.wwe.com/feeds/rss/news",
+    "Wrestling Fight Club": "https://wrestlingfightclub.com.br/feed/",
+    "Universo Wrestling": "https://universowrestling.com.br/feed/",
+    
+    # Fofocas e Celebridades
+    "Quem Acontece": "https://quem.globo.com/rss/",
+    "Contigo!": "https://contigo.com.br/feed/",
+    "Caras": "https://caras.com.br/feed/",
+    "OFuxico": "https://ofuxico.com.br/feed/",
+    "Purepeople BR": "https://www.purepeople.com.br/rss.xml",
 
     # Internacional
     "BBC News (Mundo)": "http://feeds.bbci.co.uk/news/world/rss.xml",
     "CNN Internacional": "http://rss.cnn.com/rss/edition.rss",
     "Al Jazeera": "https://www.aljazeera.com/xml/rss/all.xml",
+    "El País Brasil": "https://elpais.com/arc/outboundfeeds/rss/tags_slug/brasil-a/?outputType=xml",
+    "France 24 Português": "https://www.france24.com/pt/rss",
 
     # Clima
     "Climatempo": "https://www.climatempo.com.br/rss/",
+    "Metsul Meteorologia": "https://metsul.com/feed/",
+    "INMET Notícias": "https://portal.inmet.gov.br/noticias/rss",
+    "Tempo.com Meteored": "https://www.tempo.com/rss/",
 }
+
 
 ARQUIVO_HISTORICO = "historico_postados.txt"
 
