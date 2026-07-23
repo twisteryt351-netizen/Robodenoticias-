@@ -123,7 +123,7 @@ def pegar_noticia_multiplas_fontes():
 
     for nome_fonte, url_rss in fontes_lista:
         try:
-            feed = feedparser.parse(url_rss, timeout=10)
+            feed = feedparser.parse(url_rss,)
         except Exception as e:
             print(f"⚠️ Erro ao parsear {nome_fonte}: {e}")
             continue
