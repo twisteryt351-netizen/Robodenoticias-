@@ -333,7 +333,7 @@ caixa_publicidade = (
         '</div>'
     )
       
-    html_final = f"""{img1_html}
+html_final = f"""{img1_html}
 {conteudo_reescrito}
 {caixa_cta}
 {caixa_publicidade}
