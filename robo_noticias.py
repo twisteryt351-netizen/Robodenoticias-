@@ -334,15 +334,16 @@ caixa_publicidade = (
     )
       
 html_final = f"""{img1_html}
-{conteudo_reescrito}
-{caixa_cta}
-{caixa_publicidade}
-<hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
-<p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
-    📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
-</p>"""
+    {conteudo_reescrito}
 
-return novo_titulo, html_final
+    {caixa_cta}
+    {caixa_publicidade}
+    <hr style="border: 0; border-top: 1px solid #eee; margin-top: 30px;" />
+    <p style="color: #555555; font-size: 13px; font-style: italic; margin-top: 15px;">
+        📌 <strong>Fonte da notícia original:</strong> <a href="{link_fonte}" rel="noopener noreferrer" target="_blank">{nome_fonte}</a>
+    </p>"""
+
+    return novo_titulo, html_final
 
 
 def obter_credenciais():
