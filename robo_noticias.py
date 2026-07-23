@@ -26,7 +26,7 @@ for nome, valor in [
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
-# --- FONTES RSS DE ONDE ELE VAI TIRAR AS NOTÍCIAS ---
+# --- FONTES RSS MESCLADAS ---
 FONTES = {
     # Portais de Notícias Gerais
     "G1": "https://g1.globo.com/rss/g1/",
@@ -52,7 +52,7 @@ FONTES = {
     "Época": "https://epoca.globo.com/rss/",
     "IstoÉ": "https://istoe.com.br/feed/",
 
-    # Esportes & Automobilismo
+    # Esportes (Expandido)
     "Globo Esporte": "https://ge.globo.com/rss/",
     "UOL Esporte": "https://rss.uol.com.br/feed/esporte.xml",
     "ESPN Brasil": "https://www.espn.com.br/rss/",
@@ -151,6 +151,7 @@ def pedir_ia_groq(prompt):
     return response.choices[0].message.content.strip()
 
 def gerar_tabela_imagem_blogger(url_img, alt_title, legenda):
+    """Gera a estrutura HTML de imagem padrão do Blogger com Tabela Centralizada"""
     return f'''<table align="center" cellpadding="0" cellspacing="0" class="tr-caption-container" style="margin-left: auto; margin-right: auto;"><tbody><tr><td style="text-align: center;"><a href="{url_img}" style="margin-left: auto; margin-right: auto;"><img alt="{alt_title}" border="0" data-original-height="1152" data-original-width="2048" height="360" src="{url_img}" title="{alt_title}" width="640" /></a></td></tr><tr><td class="tr-caption" style="text-align: center;">{legenda}</td></tr></tbody></table><br />'''
 
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
@@ -164,7 +165,7 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
 
     img1_html = gerar_tabela_imagem_blogger(imgs[0], novo_titulo, f"Destaque: {novo_titulo}")
     img2_html = gerar_tabela_imagem_blogger(imgs[1], novo_titulo, f"Análise dos fatos principais")
-    img3_html = gerar_tabela_imagem_blogger(imgs[2], novo_titulo, f"Desdobramentos da notícia")
+    img3_html = gerar_tabela_imagem_blogger(imgs[2], novo_titulo, f"Desdobramentos e detalhes da notícia")
 
     caixa_cta_html = '''<div style="background-color: #ffeef4; border-radius: 16px; border: 2px solid rgb(255, 0, 127); box-shadow: rgba(255, 0, 127, 0.15) 0px 4px 20px; color: #2d3748; font-family: sans-serif; margin: 40px 0px; padding: 25px;"><p style="color: #ff007f; font-size: 20px; font-weight: bold; margin-top: 0px; text-align: center;">🎯 Atenção Apaixonado por Notícias e Descontos Exclusivos!</p><p style="font-size: 15px; line-height: 1.6;">Você sabia que existe um <a href="http://s.shopee.com.br/5VQHqQtgyf" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">método revolucionário</a> para economizar de verdade nas suas compras online diariamente? Com os <b>Cupons diários da Shopee</b>, você tem <a href="http://glamourpicklessteward.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">acesso imediato</a> na sua conta a frete grátis, cashback <a href="http://s.shopee.com.br/5fSxez7gvs" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">exclusivo</a> e descontos incríveis!</p><p style="font-size: 15px; line-height: 1.6;">Não perca mais tempo pagando caro. Este é o <a href="http://s.shopee.com.br/5VQHqQtgyf" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">treinamento mais completo</a> para o seu bolso! Acesse todos os dias pelo link oficial e garanta a sua <a href="http://s.shopee.com.br/5VQHqQtgyf" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">transformação definitiva</a> financeira ao <a href="http://glamourpicklessteward.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">resgatar</a> as melhores ofertas antes de todo mundo.</p><p style="font-size: 15px; line-height: 1.6;">Clique <a href="http://glamourpicklessteward.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">abaixo</a> agora mesmo e faça do seu dia a dia de compras uma verdadeira <a href="http://s.shopee.com.br/5fSxez7gvs" style="color: #ff007f; font-weight: bold; text-decoration: underline;" target="_blank">economia</a> inteligente!</p><div style="text-align: center;"><a href="http://s.shopee.com.br/5VQHqQtgyf" style="background-color: #ff007f; border-radius: 12px; box-shadow: rgba(255, 0, 127, 0.3) 0px 4px 10px; color: white; display: inline-block; font-size: 16px; font-weight: bold; margin-top: 15px; padding: 14px 28px; text-align: center; text-decoration: none;" target="_blank">👉 Quero Adquirir Meus Cupons Agora!</a></div></div>'''
 
@@ -213,12 +214,13 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     return novo_titulo, html_final
 
 def obter_credenciais():
+    token_url = "[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)"
     creds = Credentials(
         token=None,
         refresh_token=REFRESH_TOKEN,
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
-        token_uri="[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)",
+        token_uri=token_url,
     )
     creds.refresh(Request())
     return creds
