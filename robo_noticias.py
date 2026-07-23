@@ -322,7 +322,7 @@ caixa_cta = """<div style="background-color: #f4f6f8; border-radius: 12px; margi
 
     # Caixa de publicidade primeira, no meio do post, claramente identificada como anúncio.
     # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
-caixa_publicidade = (
+    caixa_publicidade = (
     '<div style="background-color: #ffeef4; border-radius: 16px; border: 2px solid rgb(255, 0, 127); '
         'box-shadow: rgba(255, 0, 127, 0.15) 0px 4px 20px; color: #2d3748; font-family: sans-serif; '
         'margin: 40px 0px; padding: 25px;">'
@@ -333,7 +333,7 @@ caixa_publicidade = (
         '</div>'
     )
       
-html_final = f"""{img1_html}
+    html_final = f"""{img1_html}
     {conteudo_reescrito}
 
     {caixa_cta}
