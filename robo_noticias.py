@@ -299,15 +299,17 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     </div>
     """
 
-    # Caixa de publicidade ÚNICA, no meio do post, claramente identificada como anúncio.
+    # Caixa de publicidade primeira, no meio do post, claramente identificada como anúncio.
     # Só aparece se você configurar um link de afiliado real na variável LINK_AFILIADO.
-    caixa_publicidade exemplo = "🎯 Atenção Colecionador e Amante de Descontos!
+    caixa_publicidade = " texto persuasivo com a.i.d.a do produto este link leva para cupom de descontos da shopee, pode ser um paragrafo bem escrito como este(🎯 Atenção Colecionador e Amante de Descontos!
 
 Você sabia que existe um método revolucionário para economizar de verdade nas suas compras online diariamente? Com os Cupons diários da Shopee, você tem acesso imediato na sua conta a frete grátis, cashback exclusivo e descontos insanos de até 80% Off em milhares de itens, incluindo gibis clássicos, colecionáveis de tokusatsu e tudo mais que você deseja!
 
 Não perca mais tempo pagando caro em suas compras. Este é o treinamento mais completo para o seu bolso! Entre todos os dias no link oficial e garanta a sua transformação definitiva financeira ao resgatar as melhores ofertas antes de todo mundo.
 
-Clique abaixo agora mesmo e faça do seu dia a dia de compras uma verdadeira economia inteligente com especialistas em custo-benefício!"
+Clique abaixo agora mesmo e faça do seu dia a dia de compras uma verdadeira economia inteligente com especialistas em custo-benefício!
+
+👉 Quero Adquirir Meus Cupons Agora!)"
     if LINK_AFILIADO: http://s.shopee.com.br/5VQHqQtgyf
         caixa_publicidade = f"""
         <div style="background-color: #fff8e1; border: 1px solid #f0d68a; border-radius: 10px; margin: 30px 0; padding: 20px; font-family: sans-serif;">
