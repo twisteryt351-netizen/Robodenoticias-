@@ -2,7 +2,7 @@ import os
 import random
 import time
 import feedparser
-import google.generativeai as genai
+from groq import Groq
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -24,18 +24,10 @@ for nome, valor in [
     if not valor:
         raise ValueError(f"Faltou configurar a variável/segredo: {nome}")
 
-import os
-from groq import Groq
+# Cliente oficial Groq
+groq_client = Groq(api_key=GROQ_API_KEY)
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
-response = client.chat.completions.create(
-    messages=[{"role": "user", "content": seu_prompt}],
-    model="llama-3.1-8b-instant",
-)
-texto_gerado = response.choices[0].message.content
-
-# --- FONTES RSS (corrigidas) ---
+# --- FONTES RSS ---
 FONTES = {
     # Portais de Notícias Gerais
     "G1": "https://g1.globo.com/rss/g1/",
@@ -76,7 +68,7 @@ FONTES = {
     "Jovem Nerd": "https://jovemnerd.com.br/feed-completo",
     "Critical Hits": "https://criticalhits.com.br/feed/",
     "Legião dos Heróis": "https://legiaodosherois.com.br/feed/",
-    "IGN Brasil": "https://br.ign.com/feed/",  # CORRIGIDO
+    "IGN Brasil": "https://br.ign.com/feed/",
     "TecMundo": "https://tecmundo.com.br/feed/",
     "Canaltech": "https://canaltech.com.br/feed/",
     "AdoroCinema": "https://www.adorocinema.com.br/rss/",
@@ -118,12 +110,6 @@ def marcar_como_postada(link):
         f.write(link + "\n")
 
 def pegar_noticia_multiplas_fontes():
-    """
-    Tenta encontrar uma notícia inédita.
-    Para cada fonte, tenta até 3 notícias.
-    Se nenhuma for inédita, passa para a próxima fonte.
-    Limita a 50 tentativas no total para não entrar em loop infinito.
-    """
     fontes_lista = list(FONTES.items())
     random.shuffle(fontes_lista)
     tentativas = 0
@@ -136,7 +122,7 @@ def pegar_noticia_multiplas_fontes():
             print(f"⚠️ Erro ao parsear {nome_fonte}: {e}")
             continue
 
-        for entrada in feed.entries[:5]:  # pega até 5 notícias
+        for entrada in feed.entries[:5]:
             tentativas += 1
             if tentativas > max_tentativas:
                 print("⚠️ Limite de tentativas atingido. Saindo.")
@@ -162,11 +148,17 @@ def gerar_imagem_gratis(termo_busca):
         termo_limpo = "news"
     return f"https://source.unsplash.com/800x400/?{termo_limpo}"
 
+def pedir_ia_groq(prompt):
+    """Função auxiliar para chamar o Llama 3 via Groq"""
+    response = groq_client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.1-8b-instant",
+        temperature=0.7,
+    )
+    return response.choices[0].message.content.strip()
+
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
-    """
-    Gera conteúdo único usando Gemini.
-    """
-    # Prompt principal (mantive suas regras)
+    """Gera conteúdo único usando Groq (Llama 3.1)"""
     prompt_texto = f"""
     Você é um jornalista e redator profissional de um blog de notícias em português do Brasil.
     Reescreva a notícia a seguir, no idioma português, mesmo que o conteúdo original esteja em outro idioma.
@@ -180,14 +172,14 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     6. Estrutura com subtítulos matadores, chamada para ação no final (compartilhar, comentar etc.).
     7. Espalhe 4 notas do autor com tom engraçado ou irônico (dependendo do post) ao longo do texto.
     8. Insira os seguintes links de afiliado (escondidos em palavras de impacto, como "clique aqui", "saiba mais", "veja agora"):
-       - http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6
-       - http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1
-       - http://s.shopee.com.br/5VQHqQtgyf
-       - http://www.instagram.com/auracristalencantos
-       - http://solucaodigitalshop.blogspot.com
-       - http://cabinepopnews.blogspot.com
-       - http://s.shopee.com.br/2qTBX58t8P
-       - http://s.shopee.com.br/9zwM4HodQI
+       - [http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6](http://www.effectivecpmnetwork.com/b305upis?key=2a12ca9ddb56a3b0e36ad136d078d1d6)
+       - [http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1](http://www.effectivecpmnetwork.com/vvzf3t934c?key=759e7575ec4be9a13b09fc83d86bdcb1)
+       - [http://s.shopee.com.br/5VQHqQtgyf](http://s.shopee.com.br/5VQHqQtgyf)
+       - [http://www.instagram.com/auracristalencantos](http://www.instagram.com/auracristalencantos)
+       - [http://solucaodigitalshop.blogspot.com](http://solucaodigitalshop.blogspot.com)
+       - [http://cabinepopnews.blogspot.com](http://cabinepopnews.blogspot.com)
+       - [http://s.shopee.com.br/2qTBX58t8P](http://s.shopee.com.br/2qTBX58t8P)
+       - [http://s.shopee.com.br/9zwM4HodQI](http://s.shopee.com.br/9zwM4HodQI)
     9. Cite a fonte no início ou no final, deixando claro que não disseminamos fakenews (inclua o link real).
     10. Revise tudo com rigor para não fugir a nenhuma regra.
 
@@ -196,27 +188,22 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     Resumo: {resumo}
     """
 
-    resposta = model.generate_content(prompt_texto)
-    conteudo_reescrito = resposta.text
+    conteudo_reescrito = pedir_ia_groq(prompt_texto)
 
     if not conteudo_reescrito or len(conteudo_reescrito) < 200:
         raise ValueError("Conteúdo gerado pela IA está vazio ou muito curto.")
 
-    # Gerar novo título
     prompt_titulo = (
         f"Crie, em português, um título inédito, impactante e jornalístico baseado neste tema: "
-        f"'{titulo}'. Não use as mesmas palavras do original. Retorne apenas o título."
+        f"'{titulo}'. Não use as mesmas palavras do original. Retorne APENAS o título e nada mais."
     )
-    novo_titulo = model.generate_content(prompt_titulo).text.strip()
-    # Limpeza básica do título
-    novo_titulo = novo_titulo.replace("\n", " ").strip()
+    novo_titulo = pedir_ia_groq(prompt_titulo).replace("\n", " ").strip()
 
-    # Gerar palavra‑chave para imagem
     prompt_tag = (
-        f"Com base no título '{titulo}', dê apenas uma palavra em inglês que resuma o assunto "
-        f"(ex: technology, sports, economy, politics, war, health). Responda só a palavra."
+        f"Com base no título '{titulo}', dê APENAS UMA palavra em inglês que resuma o assunto "
+        f"(ex: technology, sports, economy, politics, health). Responda APENAS a palavra."
     )
-    palavra_chave = model.generate_content(prompt_tag).text.strip().lower()
+    palavra_chave = pedir_ia_groq(prompt_tag).lower().strip()
 
     img_url = gerar_imagem_gratis(palavra_chave)
 
@@ -239,7 +226,7 @@ def obter_credenciais():
         refresh_token=REFRESH_TOKEN,
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
-        token_uri="https://oauth2.googleapis.com/token",
+        token_uri="[https://oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)",
     )
     creds.refresh(Request())
     return creds
@@ -266,7 +253,7 @@ if __name__ == "__main__":
         print(f"📰 Notícia original: {titulo[:100]}...")
         try:
             novo_titulo, html_postagem = reescrever_com_ia_anti_plagio(titulo, resumo, link, fonte)
-            print("✍️ Conteúdo gerado com sucesso. Publicando...")
+            print("✍️ Conteúdo gerado com sucesso via Groq. Publicando...")
             publicar_no_blogger(novo_titulo, html_postagem)
             marcar_como_postada(link)
             print("✅ Processo concluído.")
