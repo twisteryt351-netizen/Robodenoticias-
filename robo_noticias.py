@@ -1,4 +1,7 @@
 import os
+import re
+import time
+import base64
 import random
 import requests
 import feedparser
@@ -28,6 +31,14 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 
 # Modelo mais capaz do Groq (ainda gratuito), evita repetição e texto raso
 MODELO_IA = "llama-3.3-70b-versatile"
+
+# --- GERACAO DE IMAGENS COM IA (Cloudflare Worker) ---
+# Opcional: se nao configurado, ou se qualquer etapa falhar, o script cai
+# automaticamente no metodo antigo (busca de imagem no Openverse).
+CLOUDFLARE_WORKER_URL = os.environ.get("CLOUDFLARE_WORKER_URL")
+CLOUDFLARE_API_KEY = "0001"
+IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY")
+QTD_IMAGENS_NOTICIA = 3
 
 # --- SEU LINK´S DE AFILIADO OBRIGATÓRIO---
 # OS LINKS TEM QUE SER DISTRIBUIDOS EM PALAVRAS DE IMPACTO DE 5 A 8 POR PARAGRAFO, randomicamente sem ordem!
@@ -212,6 +223,99 @@ def buscar_imagens_openverse(palavra_chave, quantidade=2):
         return [IMAGEM_PADRAO] * quantidade
 
 
+def _endpoint_cloudflare():
+    if not CLOUDFLARE_WORKER_URL:
+        return None
+    return f"{CLOUDFLARE_WORKER_URL.rstrip('/')}/v1/images/generations"
+
+
+def gerar_imagem_cloudflare(prompt, ratio="16:9"):
+    """Gera uma imagem via Cloudflare Worker. Retorna bytes PNG ou None se falhar."""
+    endpoint = _endpoint_cloudflare()
+    if not endpoint:
+        return None
+    try:
+        resposta = requests.post(
+            endpoint,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {CLOUDFLARE_API_KEY}",
+            },
+            json={"prompt": prompt, "ratio": ratio},
+            timeout=60,
+        )
+        resposta.raise_for_status()
+        dados = resposta.json()
+        b64 = dados["data"][0]["b64_json"]
+        return base64.b64decode(b64)
+    except Exception as e:
+        print(f"⚠️ Cloudflare Worker falhou para o prompt '{prompt[:40]}...': {e}")
+        return None
+
+
+def hospedar_imagem(imagem_bytes, nome_arquivo="imagem.png"):
+    """Sobe a imagem gerada para o imgbb.com (host gratuito via API) e retorna a URL publica.
+    Catbox.moe bloqueia uploads vindos de IPs de datacenter (ex: GitHub Actions), por isso
+    usamos o imgbb, que aceita chamadas de API normalmente."""
+    if not IMGBB_API_KEY:
+        print("⚠️ Falha ao hospedar imagem: IMGBB_API_KEY nao configurada")
+        return None
+    try:
+        b64 = base64.b64encode(imagem_bytes).decode("utf-8")
+        resposta = requests.post(
+            "https://api.imgbb.com/1/upload",
+            data={"key": IMGBB_API_KEY, "image": b64, "name": nome_arquivo},
+            timeout=30,
+        )
+        resposta.raise_for_status()
+        dados = resposta.json()
+        if dados.get("success"):
+            return dados["data"]["url"]
+        raise ValueError(f"Resposta inesperada do imgbb: {dados}")
+    except Exception as e:
+        print(f"⚠️ Falha ao hospedar imagem gerada: {e}")
+        return None
+
+
+def gerar_imagem_ia(prompt, ratio="16:9"):
+    """Pipeline completo: gera a imagem no Cloudflare Worker e hospeda no imgbb. Retorna URL ou None."""
+    imagem_bytes = gerar_imagem_cloudflare(prompt, ratio)
+    if not imagem_bytes:
+        return None
+    return hospedar_imagem(imagem_bytes)
+
+
+def gerar_prompts_imagens_noticia(titulo, resumo):
+    """Pede a IA 3 prompts de imagem em ingles: capa/thumbnail (para cliques), detalhes
+    da noticia, e impactos/repercussao - na mesma ordem em que sao usadas no post."""
+    prompt = f"""
+Voce e um diretor de arte criando prompts para um gerador de imagens por IA (estilo Stable Diffusion/Flux)
+para ilustrar uma materia jornalistica.
+
+Titulo da noticia: "{titulo}"
+Resumo: {resumo}
+
+Preciso de exatamente 3 prompts de imagem em INGLES, cada um em uma linha separada, SEM numeracao,
+SEM aspas, SEM explicacoes - apenas os prompts, um por linha, nesta ordem:
+
+1) Imagem de CAPA/THUMBNAIL jornalistica: alto impacto visual, composicao central, estilo foto
+   editorial/fotojornalismo profissional, iluminacao realista, sem texto escrito na imagem,
+   pensada para maximizar cliques mantendo credibilidade jornalistica.
+2) Imagem que ilustra os DETALHES da noticia (o fato em si, o cenario onde aconteceu).
+3) Imagem que ilustra IMPACTOS E REPERCUSSAO do fato (consequencias, reacoes, desdobramentos).
+
+Cada prompt: descritivo, realista, rico em detalhes visuais (cenario, iluminacao, composicao),
+estilo foto jornalistica (nao ilustracao/desenho), SEM citar nomes proprios de pessoas reais,
+marcas registradas ou personagens - descreva visualmente sem citar nomes proprios especificos.
+Responda APENAS com as 3 linhas de prompt.
+"""
+    resposta = pedir_ia_groq(prompt, temperatura=0.7)
+    linhas = [l.strip(" -\"") for l in resposta.strip().splitlines() if l.strip()]
+    while len(linhas) < 3:
+        linhas.append(linhas[-1] if linhas else titulo)
+    return linhas[:3]
+
+
 def eh_assunto_leve(titulo, resumo):
     """Pergunta pra IA se o tema permite humor, ou se é sério demais pra brincadeira."""
     prompt = f"""
@@ -229,19 +333,30 @@ def eh_assunto_leve(titulo, resumo):
     return "LEVE" in resposta
 
 
-import re
-import random
-
 def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     print("🔧 FUNÇÃO REESCREVER COM IA - VERSÃO DEFINITIVA")
     
-    palavra_chave = extrair_palavra_chave(titulo)
-    print(f"🔑 Palavra-chave: {palavra_chave}")
-    
-    imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)
-    print(f"🖼️ {len(imagens)} imagens obtidas")
-    
-    img_principal, img_secundaria, img_terciaria = imagens[0], imagens[1], imagens[2]
+    try:
+        if not CLOUDFLARE_WORKER_URL or not IMGBB_API_KEY:
+            raise RuntimeError("Cloudflare Worker e/ou imgbb nao configurados")
+        prompts_imagens = gerar_prompts_imagens_noticia(titulo, resumo)
+        urls_ia = []
+        for i, prompt_img in enumerate(prompts_imagens):
+            url_img = gerar_imagem_ia(prompt_img, ratio="16:9")
+            if not url_img:
+                raise RuntimeError(f"Falha ao gerar/hospedar imagem {i + 1}/{QTD_IMAGENS_NOTICIA}")
+            urls_ia.append(url_img)
+            if i < len(prompts_imagens) - 1:
+                time.sleep(1.5)  # evita rajada de requisicoes no worker gratuito
+        img_principal, img_secundaria, img_terciaria = urls_ia
+        print(f"🎨 {len(urls_ia)} imagens geradas via Cloudflare Worker.")
+    except Exception as e:
+        print(f"⚠️ Geracao de imagens via IA falhou, usando metodo padrao (Openverse): {e}")
+        palavra_chave = extrair_palavra_chave(titulo)
+        print(f"🔑 Palavra-chave: {palavra_chave}")
+        imagens = buscar_imagens_openverse(palavra_chave, quantidade=3)
+        print(f"🖼️ {len(imagens)} imagens obtidas")
+        img_principal, img_secundaria, img_terciaria = imagens[0], imagens[1], imagens[2]
 
     # Título novo
     prompt_titulo = (
