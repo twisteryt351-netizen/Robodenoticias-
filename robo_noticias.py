@@ -431,6 +431,7 @@ REGRAS:
 - NUNCA repita a mesma informação.
 - Não use títulos, subtítulos, negrito ou qualquer marcação HTML.
 - Separe os parágrafos com UMA linha em branco.
+- Coloque tag´s nos post
 
 Apenas o texto corrido.
 """
