@@ -195,6 +195,33 @@ def extrair_palavra_chave(titulo):
     return pedir_ia_groq(prompt_tag, temperatura=0.3).strip().lower().split()[0]
 
 
+def gerar_tags_noticia(titulo, resumo, nome_fonte):
+    """Pede a IA de 3 a 5 tags/marcadores em português para categorizar a notícia no Blogger,
+    considerando que o blog cobre múltiplos nichos (politica, esportes, famosos, tech, clima etc.)."""
+    prompt = f"""
+Baseado neste título e resumo de notícia, gere de 3 a 5 tags/marcadores em português do Brasil
+para categorizar o post em um blog de notícias que cobre política, esportes, entretenimento,
+famosos, tecnologia, internacional e clima.
+
+Título: {titulo}
+Resumo: {resumo}
+Fonte/seção original: {nome_fonte}
+
+REGRAS:
+- Tags curtas (1 a 3 palavras cada), sem hashtag, sem numeração, sem aspas.
+- A primeira tag deve ser a categoria/editoria principal do assunto (ex: Esportes, Política,
+  Tecnologia, Famosos, Internacional, Clima, Entretenimento).
+- As demais tags devem ser específicas do assunto da notícia (nomes de temas, times,
+  eventos, area — pode citar nomes próprios aqui, pois são apenas marcadores internos).
+- Responda APENAS as tags separadas por vírgula, em uma única linha.
+"""
+    resposta = pedir_ia_groq(prompt, temperatura=0.3)
+    tags = [t.strip(" -\"") for t in resposta.strip().split(",") if t.strip(" -\"")]
+    if not tags:
+        tags = ["Notícias"]
+    return tags[:5]
+
+
 IMAGEM_PADRAO = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/News_icon.svg/640px-News_icon.svg.png"
 
 
@@ -373,6 +400,10 @@ def reescrever_com_ia_anti_plagio(titulo, resumo, link_fonte, nome_fonte):
     novo_titulo = pedir_ia_groq(prompt_titulo).replace('"', '').replace('\n', ' ').strip()
     print(f"📌 Novo título: {novo_titulo[:60]}...")
 
+    # Tags/marcadores do post
+    tags_post = gerar_tags_noticia(titulo, resumo, nome_fonte)
+    print(f"🏷️ Tags geradas: {tags_post}")
+
     # Meta tags SEO
     prompt_seo = f"""
     Baseado no título e resumo abaixo, gere duas tags meta:
@@ -431,7 +462,6 @@ REGRAS:
 - NUNCA repita a mesma informação.
 - Não use títulos, subtítulos, negrito ou qualquer marcação HTML.
 - Separe os parágrafos com UMA linha em branco.
-- Coloque tag´s nos post
 
 Apenas o texto corrido.
 """
@@ -641,7 +671,7 @@ Apenas o texto corrido.
 </p>"""
 
     print("✅ Função reescrever_com_ia_anti_plagio finalizada")
-    return novo_titulo, html_final
+    return novo_titulo, html_final, tags_post
 def obter_credenciais():
     return Credentials(
         token=None,
@@ -650,7 +680,7 @@ def obter_credenciais():
         client_secret=CLIENT_SECRET,
         token_uri="https://oauth2.googleapis.com/token",
     )
-def publicar_no_blogger(titulo, conteudo):
+def publicar_no_blogger(titulo, conteudo, tags=None):
     creds = obter_credenciais()
     blogger = build('blogger', 'v3', credentials=creds)
 
@@ -659,6 +689,8 @@ def publicar_no_blogger(titulo, conteudo):
         'title': titulo,
         'content': conteudo
     }
+    if tags:
+        corpo_postagem['labels'] = tags
 
     resultado = blogger.posts().insert(blogId=BLOGGER_ID, body=corpo_postagem).execute()
     print(f"🔥 Sucesso! Post criado: '{titulo}' -> {resultado.get('url')}")
@@ -671,9 +703,9 @@ if __name__ == "__main__":
     if titulo:
         print(f"📰 Notícia original capturada de [{fonte}]: {titulo[:100]}...")
         try:
-            novo_titulo, html_postagem = reescrever_com_ia_anti_plagio(titulo, resumo, link, fonte)
+            novo_titulo, html_postagem, tags_post = reescrever_com_ia_anti_plagio(titulo, resumo, link, fonte)
             print("✍️ Conteúdo formatado e pronto. Publicando no Blogger...")
-            publicar_no_blogger(novo_titulo, html_postagem)
+            publicar_no_blogger(novo_titulo, html_postagem, tags_post)
             marcar_como_postada(link)
             print("✅ Processo concluído com sucesso!")
         except Exception as e:
